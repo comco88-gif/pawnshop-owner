@@ -1,0 +1,1392 @@
+<title>나는 전당포 사장이다</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* Layout: 밤의 전당포 카운터. 왼쪽은 손님과 감정서, 오른쪽은 금고·전당표·장부. 한 가지 어두운 세계관으로 고정 */
+:root {
+  --bg: #17120e;
+  --wood: #221a14;
+  --panel: #2a2119;
+  --line: #43362a;
+  --fg: #eadfca;
+  --muted: #c4b498;
+  --brass: #d1a650;
+  --brass-dim: #8a6c33;
+  --paper: #efe5cf;
+  --paper-line: #d3c5a6;
+  --ink: #2b2119;
+  --ink-muted: #5c4c39;
+  --stamp: #c2462f;
+  --good: #8db071;
+  --bad: #e0705a;
+  --felt: #22302a;
+  --f-display: "Noto Serif KR", "Batang", serif;
+  --f-body: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --f-mono: "Noto Sans KR", "Malgun Gothic", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  background: var(--bg);
+  background-image: repeating-linear-gradient(90deg, transparent 0 46px, rgba(255,255,255,.012) 46px 48px);
+  color: var(--fg);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+#app {
+  max-width: 1180px; margin: 0 auto;
+  padding-block: 18px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 16px;
+}
+button { font: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* 간판 */
+.sign {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px;
+  border: 2px solid var(--brass-dim); border-radius: 4px;
+  background: linear-gradient(180deg, var(--wood), var(--bg));
+  padding: 12px 16px;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.seal {
+  font-family: "Noto Serif KR", serif; font-weight: 700; font-size: 20px; line-height: 1;
+  color: var(--stamp); border: 2px solid var(--stamp); border-radius: 3px;
+  padding: 5px 4px; writing-mode: vertical-rl; letter-spacing: 2px; transform: rotate(-4deg);
+}
+.brand h1 { font-family: var(--f-display); font-weight: 900; font-size: 26px; margin: 0; color: var(--brass); letter-spacing: .5px; }
+.brand small { display: block; color: var(--muted); font-size: 13px; letter-spacing: 1px; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.stat { display: grid; }
+.stat .k { font-size: 12px; color: var(--muted); letter-spacing: 1px; }
+.stat .v { font-family: var(--f-mono); font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ap { display: flex; gap: 3px; padding-top: 6px; }
+.ap i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--brass); }
+.ap i.on { background: var(--brass); }
+
+.main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+.counter { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.qbar { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--muted); gap: 10px; flex-wrap: wrap; }
+.qbar b { color: var(--fg); font-family: var(--f-mono); }
+
+.guest { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 14px; align-items: start; }
+.avatar { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 36px; background: var(--wood); border: 2px solid var(--line); }
+.who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.who strong { font-size: 17px; }
+.tag { font-size: 13px; color: var(--muted); }
+.patience { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); margin-left: auto; }
+.patience i { width: 14px; height: 6px; border-radius: 2px; background: var(--line); }
+.patience i.on { background: var(--good); }
+.patience.low i.on { background: var(--bad); }
+.bubble { margin-top: 8px; background: var(--wood); border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; padding: 10px 14px; font-size: 15px; }
+.bubble.mood-bad { border-color: var(--bad); }
+.bubble.mood-good { border-color: var(--good); }
+
+/* 감정서 */
+.slip {
+  background: var(--paper); color: var(--ink); border-radius: 2px; padding: 14px 16px 16px;
+  box-shadow: 0 2px 0 var(--paper-line), 0 10px 24px rgba(0,0,0,.35);
+  position: relative;
+}
+.slip-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px dashed var(--paper-line); padding-bottom: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.slip-head .t { font-family: var(--f-display); font-size: 14px; letter-spacing: 3px; color: var(--ink-muted); }
+.mode { font-size: 13px; font-weight: 700; padding: 2px 8px; border: 1.5px solid var(--stamp); color: var(--stamp); border-radius: 2px; letter-spacing: 1px; }
+.item { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 14px; align-items: center; }
+.item .e { font-size: 44px; line-height: 1; }
+.item h2 { margin: 0; font-size: 20px; text-wrap: balance; }
+.claim { font-size: 14px; color: var(--ink-muted); }
+.notes { margin-top: 12px; display: grid; gap: 2px; font-family: var(--f-mono); font-size: 14px; }
+.notes div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dotted var(--paper-line); padding: 3px 0; }
+.notes .lbl { color: var(--ink-muted); }
+.notes .warn { color: var(--stamp); font-weight: 700; }
+.notes .ok { color: #4e7a37; font-weight: 700; }
+.notes .empty { color: var(--ink-muted); font-style: italic; border: 0; }
+.stamp-over { position: absolute; right: 14px; bottom: 12px; font-family: var(--f-display); font-size: 26px; color: var(--stamp); border: 3px solid var(--stamp); padding: 0 10px; transform: rotate(-10deg); opacity: .85; }
+
+.tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { border: 1px solid var(--brass-dim); background: transparent; color: var(--fg); padding: 8px 12px; border-radius: 3px; display: inline-flex; gap: 6px; align-items: center; }
+.btn:hover:not(:disabled) { border-color: var(--brass); background: rgba(209,166,80,.08); }
+.btn:disabled { opacity: .38; cursor: not-allowed; }
+.btn .c { font-family: var(--f-mono); font-size: 12px; color: var(--brass); border: 1px solid var(--brass-dim); border-radius: 8px; padding: 0 5px; }
+.btn.primary { background: var(--brass); border-color: var(--brass); color: var(--ink); font-weight: 700; }
+.btn.primary:hover:not(:disabled) { background: #e2b965; }
+.btn.danger { border-color: var(--line); color: var(--muted); }
+
+.deal { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 10px; }
+.askline { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 14px; align-items: baseline; }
+.askline .k { color: var(--muted); font-size: 14px; }
+.askline .v { font-family: var(--f-mono); font-size: 22px; font-weight: 700; color: var(--brass); }
+.offer-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.offer-row input {
+  width: 9.5em; font-family: var(--f-mono); font-size: 20px; font-weight: 700; text-align: right;
+  background: var(--bg); color: var(--fg); border: 1px solid var(--brass-dim); border-radius: 3px; padding: 6px 10px;
+}
+.step { min-width: 46px; justify-content: center; padding: 6px 8px; font-family: var(--f-mono); font-size: 14px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.hint { font-size: 13px; color: var(--muted); }
+
+/* 사이드 */
+.side { display: grid; gap: 14px; min-width: 0; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px; min-width: 0; }
+.box h3 { margin: 0 0 10px; font-family: var(--f-display); font-weight: 900; font-size: 17px; color: var(--brass); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.box h3 small { font-family: var(--f-body); font-size: 13px; color: var(--muted); }
+.empty-note { color: var(--muted); font-size: 14px; }
+.inv { display: grid; gap: 8px; }
+.inv-item { border: 1px solid var(--line); border-radius: 3px; padding: 9px 10px; display: grid; gap: 6px; background: var(--wood); }
+.inv-top { display: flex; gap: 8px; align-items: center; }
+.inv-top .e { font-size: 22px; }
+.inv-top .n { font-weight: 700; font-size: 14px; flex: 1; min-width: 0; }
+.inv-meta { font-size: 13px; color: var(--muted); font-family: var(--f-mono); }
+.offer-box { font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; }
+.offer-box .q { color: var(--fg); }
+.mini { padding: 4px 9px; font-size: 14px; }
+.tickets { display: grid; gap: 8px; }
+.ticket { background: var(--paper); color: var(--ink); padding: 8px 10px; border-left: 4px dotted var(--paper-line); font-size: 14px; display: grid; gap: 2px; }
+.ticket .no { font-family: var(--f-mono); color: var(--stamp); font-weight: 700; font-size: 13px; }
+.ticket .d { color: var(--ink-muted); font-family: var(--f-mono); font-size: 13px; }
+/* 감정 패드: 3D 물건이 놓이는 녹색 펠트 */
+.item.has-stage { grid-template-columns: minmax(0, 250px) minmax(0, 1fr); align-items: start; }
+@media (max-width: 560px) { .item.has-stage { grid-template-columns: minmax(0, 1fr); } }
+.stage {
+  position: relative; width: 100%; max-width: 100%; aspect-ratio: 1; border-radius: 3px; overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, rgba(255,255,255,.10), transparent 62%), var(--felt);
+  box-shadow: inset 0 0 0 4px rgba(0,0,0,.18), inset 0 2px 14px rgba(0,0,0,.5);
+}
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.stage canvas:active { cursor: grabbing; }
+.stage .fallback { display: grid; place-items: center; height: 100%; font-size: 72px; }
+.stage-cap { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-size: 12px; color: rgba(234,223,202,.7); pointer-events: none; }
+.th { width: 46px; height: 46px; border-radius: 3px; background: var(--felt); flex: none; object-fit: cover; }
+.th.sm { width: 34px; height: 34px; }
+.ticket-row { display: flex; gap: 8px; align-items: center; }
+.choices { display: grid; gap: 8px; margin-top: 12px; }
+.choice {
+  display: grid; gap: 2px; text-align: left; padding: 10px 12px; border-radius: 2px;
+  background: transparent; color: var(--ink); border: 1.5px solid var(--ink-muted);
+}
+.choice b { font-size: 15px; }
+.choice span { font-size: 13px; color: var(--ink-muted); }
+.choice:hover:not(:disabled) { border-color: var(--stamp); background: rgba(194,70,47,.06); }
+.choice:disabled { opacity: .4; cursor: not-allowed; }
+.hearts { color: var(--stamp); font-size: 14px; letter-spacing: 1px; }
+.book { display: grid; gap: 8px; }
+.regular { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: center; }
+.regular .e { font-size: 24px; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: var(--wood); border: 1px solid var(--line); }
+.regular .n { font-weight: 700; font-size: 14px; }
+.log { display: grid; gap: 4px; max-height: 240px; overflow-y: auto; font-size: 14px; }
+.log div { border-bottom: 1px dotted var(--line); padding: 3px 0; color: var(--muted); }
+.log div b { color: var(--fg); font-weight: 500; }
+.chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 6px; border-radius: 2px; margin-right: 6px; border: 1px solid currentColor; }
+.chip.g { color: var(--good); } .chip.r { color: var(--bad); } .chip.y { color: var(--brass); }
+.pos { color: var(--good); } .neg { color: var(--bad); }
+
+/* 모달 */
+.overlay { position: fixed; inset: 0; background: rgba(10,7,5,.78); display: grid; place-items: center; z-index: 20;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.modal { width: min(560px, 100%); max-height: 100%; overflow-y: auto; }
+.modal .slip { padding: 22px 22px 20px; }
+.modal h2 { font-family: var(--f-display); font-weight: 900; font-size: 28px; margin: 0 0 4px; text-wrap: balance; }
+.modal p { margin: 6px 0; }
+.modal ul { margin: 10px 0; padding-left: 18px; display: grid; gap: 5px; font-size: 14px; }
+.modal .row { display: flex; justify-content: space-between; gap: 10px; font-family: var(--f-mono); border-bottom: 1px dotted var(--paper-line); padding: 4px 0; font-size: 14px; }
+.modal .report { display: grid; gap: 6px; margin: 12px 0; font-size: 14px; }
+.modal .btn.primary { margin-top: 12px; padding: 10px 18px; }
+.modal .pos { color: #4e7a37; } .modal .neg { color: var(--stamp); }
+.grade { font-family: var(--f-display); font-size: 64px; color: var(--stamp); line-height: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .slip.enter { animation: slide .35s ease-out; }
+  @keyframes slide { from { transform: translateY(10px) rotate(-1deg); opacity: .4; } to { transform: none; opacity: 1; } }
+}
+</style>
+
+<div id="app"></div>
+
+<script>
+const R = (a, b) => a + Math.random() * (b - a);
+const RI = (a, b) => Math.floor(R(a, b + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, v));
+const won = n => Math.round(n).toLocaleString('ko-KR') + '만원';
+const fill = (s, n) => s.replace('{n}', Math.round(n).toLocaleString('ko-KR'));
+
+const DAYS = 14, AP_MAX = 8, RENT = 400, INTEREST = 0.12, TERM = 3, START_CASH = 1500, GOAL = 3000;
+const COND = { S: 1, A: 0.82, B: 0.62, C: 0.4 };
+const CONDS = ['S', 'A', 'B', 'C'];
+const PUR = { '14K': 0.585, '18K': 0.75, '24K': 0.9999 };
+const SURN = '김이박최정강조윤장임한오서신권황안송홍';
+const GIVEN = ['민준', '서연', '지훈', '하은', '도윤', '수아', '현우', '지민', '정호', '상철', '미경', '태식', '은지', '동석'];
+const GIVEN_OLD = ['영숙', '순자', '말순', '경자', '옥순', '정희'];
+
+const ITEMS = {
+  rolex:   { name: '롤렉스 서브마리너', e: '⌚', base: 1300 },
+  omega:   { name: '오메가 씨마스터', e: '⌚', base: 480 },
+  chanel:  { name: '샤넬 클래식 플랩백', e: '👜', base: 1100 },
+  lv:      { name: '루이비통 스피디 30', e: '👜', base: 160 },
+  macbook: { name: '맥북 프로 14', e: '💻', base: 210, nofake: true },
+  iphone:  { name: '아이폰 프로', e: '📱', base: 120, nofake: true },
+  switch:  { name: '닌텐도 스위치 2', e: '🎮', base: 45, nofake: true },
+  leica:   { name: '라이카 M6 필름카메라', e: '📷', base: 520 },
+  guitar:  { name: '펜더 스트랫 기타', e: '🎸', base: 170 },
+  diamond: { name: '다이아 반지 1캐럿', e: '💍', base: 600 },
+  pen:     { name: '몽블랑 마이스터스튁', e: '🖋️', base: 70 },
+  celadon: { name: '청자 상감 운학문 매병', e: '🏺', base: 1800, fakeBoost: 0.45 },
+  gneck:   { name: '금목걸이', e: '📿', gold: true, don: [3, 10] },
+  gring:   { name: '금 쌍가락지', e: '💍', gold: true, don: [1, 4] },
+  gbrace:  { name: '금팔찌', e: '🔗', gold: true, don: [4, 12] },
+};
+
+const ARCH = {
+  student: { label: '급전 필요한 대학생', e: '🧑‍🎓', desp: [0.35, 0.5], fake: 0.08, knowFake: false, stolen: 0.03, honest: true, redeem: 0.8, vulnerable: true, pawnRate: 0.55, patience: [4, 5],
+    items: ['iphone', 'macbook', 'switch', 'guitar', 'lv', 'gring'],
+    sell: ['사장님, 이거 얼마 쳐주세요? 월세가 밀려서요.', '급하게 돈이 필요해서요. 이거 팔고 싶어요.'],
+    pawn: ['다음 달 알바비 들어오면 꼭 찾으러 올게요. 맡길 수 있을까요?'],
+    origin: ['작년에 알바비 모아서 산 거예요.', '생일 선물로 받은 건데... 어쩔 수 없죠.'],
+    accept: '감사합니다! 진짜 살았어요.' },
+  grandma: { label: '손주 등록금 마련하는 할머니', e: '👵', desp: [0.3, 0.45], fake: 0.12, knowFake: false, stolen: 0, honest: true, redeem: 0.85, vulnerable: true, pawnRate: 0.5, patience: [5, 6],
+    items: ['gneck', 'gring', 'gbrace', 'celadon', 'diamond', 'pen'],
+    sell: ['이거 팔믄 얼마나 받을 수 있을까. 손주 등록금이 모자라서...', '영감 유품인데, 이제 보내줘야지.'],
+    pawn: ['이거 맡기고 돈 좀 빌려줘요. 연금 나오면 찾으러 올게.'],
+    origin: ['영감이 살아생전에 사준 거야.', '시집올 때 해온 거지. 오래됐어.'],
+    accept: '고마워요 사장님, 복 받을 거야.' },
+  reseller: { label: '말 빠른 리셀러', e: '😎', desp: [0.7, 0.85], fake: 0.25, knowFake: true, stolen: 0.05, honest: false, redeem: 0.45, pawnRate: 0.2, patience: [3, 4],
+    items: ['rolex', 'chanel', 'lv', 'omega', 'leica', 'switch'],
+    sell: ['사장님 이거 시세 아시죠? 깔끔하게 가시죠.', '급처분이에요. 빨리 현금화하고 싶어서요.'],
+    pawn: ['며칠만 맡길게요. 물건 들어오면 바로 찾아가요.'],
+    origin: ['해외 직구요. 영수증은 집에 있어요.', '매장에서 샀죠, 당연히.'],
+    accept: '오케이, 거래 성사.' },
+  nervous: { label: '땀 흘리는 남자', e: '😰', desp: [0.2, 0.35], fake: 0.1, knowFake: true, stolen: 0.65, honest: false, redeem: 0.15, pawnRate: 0.3, patience: [3, 4],
+    items: ['rolex', 'macbook', 'gbrace', 'leica', 'iphone', 'diamond'],
+    sell: ['저... 이거 지금 바로 현금으로 되죠?', '빨리 좀 해주세요. 시간이 없어서.'],
+    pawn: ['이거 좀 맡아주세요. 금방... 금방 올게요.'],
+    origin: ['제... 제 거예요. 진짜로.'],
+    accept: '...현금으로 주세요. 빨리요.' },
+  ceo: { label: '사업 접은 사장님', e: '🧔', desp: [0.45, 0.6], fake: 0.05, knowFake: false, stolen: 0.02, honest: true, redeem: 0.75, pawnRate: 0.65, patience: [4, 5],
+    items: ['rolex', 'omega', 'gbrace', 'pen', 'celadon', 'leica'],
+    sell: ['잘나갈 때 산 건데, 이제 정리하려고요.', '가게 정리하면서 내놓는 거예요.'],
+    pawn: ['거래처 대금 막아야 해서요. 며칠 안에 찾으러 옵니다.'],
+    origin: ['잘나갈 때 산 거죠. 다 옛날 얘기예요.', '개업 10주년 때 저한테 준 선물이었어요.'],
+    accept: '고맙습니다. 다시 일어서면 찾으러 오죠.' },
+  lady: { label: '우아한 정장 손님', e: '👩‍💼', desp: [0.5, 0.7], fake: 0.55, knowFake: true, stolen: 0.05, honest: false, redeem: 0.1, pawnRate: 0.45, patience: [3, 4],
+    items: ['chanel', 'diamond', 'rolex', 'celadon', 'gneck'],
+    sell: ['감정 오래 걸리나요? 약속이 있어서요.', '정품이에요. 보증서는 집에 두고 왔고요.'],
+    pawn: ['잠깐 맡기는 거예요. 금방 찾으러 올 거예요.'],
+    origin: ['남편이 선물해준 거예요.', '본점에서 직접 샀어요.'],
+    accept: '네, 그렇게 하죠.' },
+};
+const LINES = {
+  sellCounter: ['{n}만원은 받아야겠어요.', '에이, {n}만원은 주셔야죠.', '{n}만원. 더는 못 내려요.'],
+  pawnCounter: ['{n}만원은 빌려주셔야 해요.', '{n}만원 정도는 되지 않아요?'],
+  insult: ['장난하세요? 이게 얼마짜린데!', '그 돈이면 그냥 들고 갈래요.'],
+  leave: ['됐어요. 다른 데 갈게요.', '시간 낭비했네.'],
+  stolen: ['어... 그게, 친구가 맡긴... 아니 제 거예요.', '그런 걸 왜 물어봐요? 살 거예요 말 거예요?', '주웠... 아니, 산 거예요.'],
+  fakeNervous: ['아니, 뭘 그렇게 오래 봐요?', '정품이라니까요. 의심하시는 거예요?'],
+  reject: '아... 네. 알겠어요.',
+  buyer: ['진열장 보고 들어온 손님이', '단골 수집가가', '중고 카페 보고 연락 온 손님이'],
+};
+
+/* ---------- 단골과 사연 ---------- */
+const REG = {
+  grandma: { name: '박영숙', e: '👵', label: '손주 바라기 할머니' },
+  broker:  { name: '정태식', e: '😰', label: '싼 물건 들고 오는 남자' },
+  student: { name: '윤서연', e: '🧑‍🎓', label: '사진과 졸업반' },
+};
+const SPEAKERS = { ...REG, detective: { name: '강 형사', e: '🕵️', label: '관할서 강력팀' } };
+
+const aff = (r, n) => { r.aff = Math.max(-3, Math.min(5, r.aff + n)); };
+const repUp = n => { G.rep = clamp(G.rep + n); };
+const ticketOf = k => G.pawns.find(p => p.story === k);
+const dropTicket = t => { G.pawns = G.pawns.filter(p => p !== t); };
+const invFromTicket = p => ({ ...p.item, id: G.uid++, cost: p.loan, from: p.owner + ' (유질)', offer: null, offerDay: 0 });
+const leicaItem = () => ({ key: 'leica', name: '라이카 M6 필름카메라', e: '📷', gold: false, base: 520, fake: false, stolen: false, cond: 'A', claimCond: 'A', real: 430, rev: { cond: 'A' } });
+const BROKER_SUPPLY = () => ({ arch: 'nervous', name: REG.broker.name, ik: pick(['rolex', 'omega', 'leica', 'macbook', 'diamond', 'gbrace']),
+  item: { stolen: true, fake: false }, mode: 'sell', askF: 0.5, minF: 0.3, say: '오늘 물건이에요. 늘 하던 대로 반값.', regular: 'broker' });
+
+// type 'deal'은 일반 흥정, 나머지는 선택지 이벤트. day에 cond를 만족하면 그날 손님 줄에 끼어든다.
+const STORY = {
+  g1: { arc: 'grandma', day: 2, type: 'deal',
+    spec: { arch: 'grandma', ik: 'gring', item: { don: 3, purity: '18K', fake: false, stolen: false }, mode: 'pawn', askF: 0.8, minF: 0.4,
+      say: '이 쌍가락지, 영감이 장가올 때 해준 거야. 손주 입학금이 모자라서... 꼭 찾으러 올게.' },
+    onDeal(r, price, t, c) { r.flags.pawned = true; t.story = 'grandma'; if (price >= c.perceived * 0.5) aff(r, 1); r.note = `쌍가락지를 ${won(price)}에 맡겼다`; },
+    onFail(r) { r.note = '다른 전당포로 갔다'; } },
+  g2: { arc: 'grandma', day: 5, cond: r => r.flags.pawned && ticketOf('grandma'), title: '할머니의 부탁',
+    say: () => '사장님... 이자까지는 못 모았어. 원금만 받고 반지 돌려줄 수 있을까?',
+    info: () => { const t = ticketOf('grandma'); return `No.${t.no} 전당표 · 대출 ${won(t.loan)} · 원래 환매가 ${won(t.loan * (1 + INTEREST))}`; },
+    choices: r => { const t = ticketOf('grandma'); return [
+      { label: '원금만 받고 돌려준다', hint: `이자 ${won(t.loan * INTEREST)} 포기 · 평판↑`, run() { G.cash += t.loan; dropTicket(t); aff(r, 2); repUp(5); r.note = '반지를 되찾아 갔다'; return ['아이고, 고마워요. 이 은혜 안 잊을게.', 'good']; } },
+      { label: '기한을 3일 연장해준다', hint: '이자는 그대로 받는다', run() { t.due = G.day + 3; t.story = null; t.rp = 0.95; aff(r, 1); r.note = '전당 기한을 연장받았다'; return ['...그래요, 3일만 더 기다려줘요. 꼭 올게.', '']; } },
+      { label: '규칙대로 유질 처리한다', hint: '반지는 내 것 · 평판↓', run() { dropTicket(t); G.inv.push(invFromTicket(t)); aff(r, -3); repUp(-5); r.note = '반지를 잃었다'; return ['...알겠어요. 장사는 장사니까.', 'bad']; } },
+    ]; } },
+  g2b: { arc: 'grandma', day: 5, cond: r => r.met && !r.flags.pawned, title: '다시 들른 할머니',
+    say: () => '딴 데서 반지 맡겼더니 이자가 무섭더라고. 여기 맡길 걸 그랬어.',
+    choices: r => [
+      { label: '차 한 잔 대접한다', hint: '호감↑', run() { aff(r, 2); r.note = '차 한 잔 얻어 마셨다'; return ['따뜻하네. 사장님 맘씨가 좋아.', 'good']; } },
+      { label: '다음엔 꼭 저희한테 오시라고 한다', run() { return ['그래요, 그래야지.', '']; } },
+    ] },
+  g3: { arc: 'grandma', day: 10, cond: r => r.aff >= 2, title: '합격 소식',
+    say: () => '우리 손주 대학 붙었어! 사장님 덕이야. 경로당에 소문 다 내놨어.',
+    choices: r => [
+      { label: '진심으로 축하드린다', hint: '평판↑ · 매일 손님 +1', run() { repUp(8); G.bonusQueue++; aff(r, 1); r.note = '동네에 가게를 소개해준다'; return ['앞으로 동네 사람들 다 여기로 보낼게.', 'good']; } },
+    ] },
+
+  b1: { arc: 'broker', day: 3, type: 'deal',
+    spec: { arch: 'nervous', ik: 'rolex', item: { cond: 'A', stolen: true, fake: false }, mode: 'sell', askF: 0.45, minF: 0.25,
+      say: '롤렉스예요. 급하게 정리하는 거라 싸게 드릴게요. 대신 묻지는 마세요.' },
+    onDeal(r, price) { r.flags.bought = true; r.note = `롤렉스를 ${won(price)}에 넘겼다`; },
+    onFail(r) { r.note = '물건을 들고 돌아갔다'; } },
+  b2: { arc: 'broker', day: 6, cond: r => r.met, title: '수상한 제안',
+    say: r => r.flags.bought ? '사장님, 지난번 물건 괜찮았죠? 앞으로 꾸준히 대드릴게요. 시세 반값에.' : '지난번엔 섭섭했어요. 그래도 제안 하나 할게요. 물건 꾸준히 대드릴게요, 시세 반값에.',
+    choices: r => [
+      { label: '손잡는다', hint: '매일 반값 물건이 들어온다 · 전부 장물', run() { r.flags.partner = true; r.note = '거래 파트너 · 매일 물건을 가져온다'; return ['역시 사장님은 말이 통하네.', '']; } },
+      { label: '거절한다', run() { r.note = '제안을 거절했다'; return ['...후회하실 텐데.', 'bad']; } },
+      { label: '경찰에 신고한다', hint: '평판↑ · 포상금 100만원 · 그에게 산 물건은 압수', run() { r.flags.reported = true; repUp(10); G.cash += 100; G.inv = G.inv.filter(x => !x.broker); r.note = '경찰에 체포되었다'; return ['(정태식이 경찰에 연행되었다. 포상금 100만원을 받았다.)', 'good']; } },
+    ] },
+  b3: { arc: 'broker', day: 9, speaker: 'detective', cond: r => r.flags.reported, title: '형사의 답례',
+    say: () => '정태식 신고 덕에 일당을 잡았습니다. 수상한 손님 알아보는 요령 좀 알려드리죠.',
+    choices: r => [
+      { label: '귀 기울여 듣는다', hint: '출처 묻기가 항상 정확해진다', run() { G.perks.sharpEye = true; r.note = '체포됨 · 강 형사와 안면을 텄다'; return ['눈을 보세요. 장물 든 사람은 질문을 받으면 시선부터 피합니다.', 'good']; } },
+    ] },
+  b3b: { arc: 'broker', day: 11, speaker: 'detective', cond: r => r.flags.partner, title: '형사 방문',
+    say: () => '정태식 압니까? 그 친구가 여기로 물건을 넘겼다고 불던데요.',
+    choices: r => [
+      { label: '모른다고 잡아뗀다', hint: '반반의 도박', run() {
+        r.flags.partner = false;
+        if (Math.random() < 0.5) { G.cash -= 500; repUp(-20); G.inv = G.inv.filter(x => !x.stolen); r.note = '장물 취득으로 벌금을 냈다'; return ['장부에 다 남아 있는데요? 장물은 압수하고, 벌금 500만원입니다.', 'bad']; }
+        r.note = '형사의 의심을 피했다 · 거래 중단'; return ['...일단 알겠습니다. 또 오죠.', '']; } },
+      { label: '사실대로 협조한다', hint: '장물은 모두 압수 · 평판↓', run() {
+        r.flags.partner = false;
+        const n = G.inv.filter(x => x.stolen).length + G.pawns.filter(p => p.item.stolen).length;
+        G.inv = G.inv.filter(x => !x.stolen); G.pawns = G.pawns.filter(p => !p.item.stolen); repUp(-8);
+        r.note = '수사에 협조했다 · 거래 중단'; return [`협조 감사합니다. 장물 ${n}점은 가져가겠습니다. 이번엔 넘어가죠.`, '']; } },
+    ] },
+
+  s1: { arc: 'student', day: 4, title: '졸업반의 카메라',
+    item: { key: 'leica', cond: 'A', e: '📷', name: '라이카 M6 필름카메라', claim: '손님 말: 상태 A급 · 시세 약 430만원' },
+    say: () => '졸업 작품 찍던 카메라예요. 등록금 마감이 모레라서... 400만원이 필요해요.',
+    choices: r => [
+      { label: '카메라를 맡고 300만원 빌려준다', cost: 300, hint: '전당', run() {
+        G.cash -= 300; G.pawns.push({ no: G.ticket++, item: leicaItem(), loan: 300, due: 13, rp: 1, owner: REG.student.name, story: 'student' });
+        r.flags.pawned = true; aff(r, 1); r.note = '카메라를 맡기고 300만원을 빌렸다'; return ['감사합니다. 졸업하면 꼭 찾으러 올게요.', 'good']; } },
+      { label: '카메라를 400만원에 사들인다', cost: 400, hint: '매입', run() {
+        G.cash -= 400; G.inv.push({ ...leicaItem(), id: G.uid++, cost: 400, from: REG.student.name, offer: null, offerDay: 0, sy: true });
+        r.flags.bought = true; r.note = '카메라를 400만원에 팔았다'; return ['...잘 부탁드려요. 좋은 사람한테 갔으면 좋겠어요.', '']; } },
+      { label: '카메라는 두고, 100만원만 빌려준다', cost: 100, hint: '담보 없음 · 호감↑↑', run() {
+        G.cash -= 100; r.flags.trust = true; aff(r, 2); r.note = '담보 없이 100만원을 빌렸다'; return ['네? 정말요...? 이 은혜 꼭 갚을게요.', 'good']; } },
+      { label: '돌려보낸다', run() { aff(r, -1); r.note = '돌려보냈다'; return ['...네. 다른 데 알아볼게요.', 'bad']; } },
+    ] },
+  s2: { arc: 'student', day: 9, cond: r => r.flags.pawned || r.flags.bought || r.flags.trust, title: '공모전 전날',
+    say: r => r.flags.pawned ? '공모전 마감이 내일이에요. 하루만 카메라를 빌려갈 수 있을까요? 꼭 돌려드릴게요.'
+      : r.flags.bought ? (G.inv.some(x => x.sy) ? '그 카메라... 아직 있어요? 450만원이면 다시 살 수 있을까요? 공모전에 꼭 쓰고 싶어서요.' : '그 카메라 팔렸구나... 아니에요, 그냥 보고 싶어서 와봤어요.')
+      : '공모전에 출품하려고요! 빌린 돈은 꼭 갚을게요.',
+    choices: r => {
+      if (r.flags.pawned) return [
+        { label: '하루 빌려준다', hint: '호감↑↑', run() { const t = ticketOf('student'); if (t) t.out = true; aff(r, 2); r.note = '카메라를 하루 빌려 갔다'; return ['고맙습니다! 내일 꼭 가져올게요.', 'good']; } },
+        { label: '규칙상 안 된다고 한다', run() { aff(r, -1); return ['...그렇죠. 무리한 부탁이었어요.', 'bad']; } },
+      ];
+      const cam = G.inv.find(x => x.sy);
+      if (r.flags.bought && cam) return [
+        { label: '450만원에 돌려준다', hint: '호감↑↑', run() { G.cash += 450; G.inv = G.inv.filter(x => x !== cam); aff(r, 2); r.flags.rebought = true; r.note = '카메라를 되샀다'; return ['정말요? 이 카메라로 꼭 상 받을게요!', 'good']; } },
+        { label: '600만원은 받아야 한다', hint: '반반', run() {
+          if (Math.random() < 0.5) { G.cash += 600; G.inv = G.inv.filter(x => x !== cam); aff(r, -1); r.flags.rebought = true; r.note = '카메라를 600만원에 되샀다'; return ['...알겠어요. 적금 깰게요.', '']; }
+          aff(r, -1); return ['그 돈은... 없어요.', 'bad']; } },
+        { label: '팔지 않는다', run() { aff(r, -2); return ['...네.', 'bad']; } },
+      ];
+      if (r.flags.bought) return [{ label: '미안하다고 한다', run() { return ['괜찮아요. 제가 판 건데요.', '']; } }];
+      return [{ label: '응원한다', hint: '호감↑', run() { aff(r, 1); return ['꼭 좋은 소식 가져올게요!', 'good']; } }];
+    } },
+  s3: { arc: 'student', day: 13, cond: r => r.flags.pawned || r.flags.trust || r.flags.rebought, title: '공모전 결과',
+    say: r => r.aff >= 3 ? '사장님! 저 공모전 대상 받았어요! 상금 받자마자 달려왔어요.' : '공모전은 떨어졌어요. 그래도 약속은 지키러 왔어요.',
+    choices: r => [
+      { label: r.flags.pawned ? '전당표를 정리한다' : r.flags.trust ? '빌려준 돈을 받는다' : '축하해준다', run() {
+        const win = r.aff >= 3;
+        const t = ticketOf('student');
+        if (t) { G.cash += Math.round(t.loan * (1 + INTEREST)); dropTicket(t); }
+        if (r.flags.trust) G.cash += win ? 150 : 100;
+        if (win) { repUp(10); r.note = '대상 수상 · 가게 사진이 SNS에서 화제'; return ['약속한 돈에 감사 인사까지 얹었어요. 가게 사진 올렸더니 반응이 엄청나요!', 'good']; }
+        r.note = '약속을 지켰다'; return ['조금 늦었지만, 갚을게요. 감사했어요.', 'good']; } },
+    ] },
+};
+
+function spawnStory(id) {
+  const S = STORY[id], r = G.reg[S.arc];
+  G.storyDone[id] = true; r.met = true;
+  if (S.type === 'deal') return genCustomer({ ...S.spec, name: REG[S.arc].name, story: id, regular: S.arc });
+  return { kind: 'choice', story: id, speaker: S.speaker || S.arc, title: S.title, say: S.say(r), info: S.info ? S.info(r) : '', status: 'talk', mood: '' };
+}
+
+function storyFail(c) {
+  const S = c.story && STORY[c.story];
+  if (S && S.onFail) S.onFail(G.reg[S.arc]);
+}
+
+function choose(i) {
+  const c = G.cur; if (!c || c.kind !== 'choice' || c.status !== 'talk') return;
+  const S = STORY[c.story], r = G.reg[S.arc], ch = S.choices(r)[i];
+  if (!ch || (ch.cost && ch.cost > G.cash)) return;
+  const [say, mood] = ch.run(r);
+  c.say = say; c.mood = mood; c.status = 'done'; c.picked = ch.label;
+  log(`<span class="chip y">사연</span><b>${SPEAKERS[c.speaker].name}</b> · ${ch.label}`);
+  render();
+}
+
+const hearts = a => a < 0 ? `<span class="neg">냉담 ${a}</span>` : '♥'.repeat(a) + '♡'.repeat(5 - a);
+
+let G;
+
+function newGame() {
+  G = { phase: 'intro', day: 1, cash: START_CASH, rep: 50, ap: AP_MAX, gold: 58, queue: 0, served: 0,
+    cur: null, inv: [], pawns: [], log: [], ticket: 101, uid: 1, report: [],
+    reg: Object.fromEntries(Object.keys(REG).map(k => [k, { met: false, aff: 0, flags: {}, note: '' }])),
+    storyQ: [], storyDone: {}, perks: {}, bonusQueue: 0, brokerToday: false,
+    stats: { deals: 0, pawns: 0, redeemed: 0, forfeited: 0, seized: 0, sold: 0, profit: 0 } };
+}
+
+function log(html) { G.log.unshift(`<span class="num">D${G.day}</span> ${html}`); G.log = G.log.slice(0, 60); }
+
+function startDay() {
+  G.phase = 'day'; G.ap = AP_MAX; G.served = 0;
+  G.storyQ = Object.keys(STORY).filter(id => {
+    const S = STORY[id];
+    return S.day === G.day && !G.storyDone[id] && (!S.cond || S.cond(G.reg[S.arc]));
+  });
+  G.brokerToday = !!G.reg.broker.flags.partner;
+  G.queue = Math.min(9, 4 + Math.floor(G.rep / 20)) + G.bonusQueue + G.storyQ.length + (G.brokerToday ? 1 : 0);
+  nextCustomer();
+}
+
+function pickArch() {
+  const w = { student: 3, grandma: 2 + G.rep / 40, reseller: 2, nervous: 1.5 + (100 - G.rep) / 40, ceo: 2, lady: 1.6 };
+  let t = Math.random() * Object.values(w).reduce((a, b) => a + b, 0);
+  for (const k in w) { t -= w[k]; if (t <= 0) return k; }
+  return 'student';
+}
+
+function pickCond() {
+  const r = Math.random();
+  return r < 0.2 ? 'S' : r < 0.6 ? 'A' : r < 0.9 ? 'B' : 'C';
+}
+
+function realOf(it) {
+  if (it.gold) return it.fake ? it.don * 0.4 : it.don * G.gold * PUR[it.purity] * 0.95;
+  return it.real;
+}
+
+function genCustomer(spec = {}) {
+  const ak = spec.arch || pickArch(), A = ARCH[ak];
+  const ik = spec.ik || pick(A.items), I = ITEMS[ik];
+  const o = spec.item || {};
+  const mode = spec.mode || (Math.random() < A.pawnRate ? 'pawn' : 'sell');
+  const fakeP = I.nofake ? 0 : A.fake + (I.fakeBoost || 0);
+  const it = { key: ik, name: I.name, e: I.e, gold: !!I.gold, base: I.base,
+    fake: o.fake ?? Math.random() < fakeP, stolen: o.stolen ?? Math.random() < A.stolen };
+  let perceived;
+  if (I.gold) {
+    it.don = o.don ?? RI(...I.don);
+    it.purity = o.purity ?? pick(['14K', '18K', '18K', '24K']);
+    it.claimPurity = it.fake ? pick(['18K', '24K']) : A.honest ? it.purity : '24K';
+    it.claimDon = A.honest ? it.don : it.don + RI(0, 2);
+    perceived = it.claimDon * G.gold * PUR[it.claimPurity];
+  } else {
+    it.cond = o.cond ?? pickCond();
+    const better = CONDS[Math.max(0, CONDS.indexOf(it.cond) - 1)];
+    it.claimCond = A.honest ? (Math.random() < 0.7 ? it.cond : better) : 'S';
+    it.real = it.fake ? I.base * R(0.02, 0.05) : I.base * COND[it.cond] * R(0.9, 1.1);
+    perceived = I.base * COND[it.claimCond];
+  }
+  let ask, min;
+  if (mode === 'sell') { ask = perceived * (spec.askF ?? R(1.05, 1.3)); min = perceived * (spec.minF ?? R(...A.desp)); }
+  else { ask = perceived * (spec.askF ?? R(0.6, 0.8)); min = perceived * (spec.minF ?? R(...A.desp) * 0.6); }
+  ask = Math.max(2, Math.round(ask)); min = Math.max(1, Math.min(ask - 1, Math.round(min)));
+  const p = RI(...A.patience);
+  return { arch: ak, name: spec.name || pick(SURN) + pick(ak === 'grandma' ? GIVEN_OLD : GIVEN), item: it, mode, perceived, ask, min, patience: p, maxPatience: p,
+    rev: {}, asked: false, status: 'talk', offer: Math.round(ask * 0.5), say: spec.say || pick(A[mode]), mood: '',
+    story: spec.story || null, regular: spec.regular || null };
+}
+
+function nextCustomer() {
+  if (G.served >= G.queue) { G.cur = null; G.phase = 'closed'; render(); return; }
+  const remaining = G.queue - G.served;
+  G.served++;
+  const special = G.storyQ.length + (G.brokerToday ? 1 : 0);
+  if (special && (remaining <= special || (G.served > 1 && Math.random() < 0.45))) {
+    if (G.storyQ.length) G.cur = spawnStory(G.storyQ.shift());
+    else { G.brokerToday = false; G.cur = genCustomer(BROKER_SUPPLY()); }
+  } else G.cur = genCustomer();
+  G.cur.fresh = true;
+  render();
+}
+
+const TOOLS = {
+  cond:   { label: '상태 확인', cost: 1 },
+  price:  { label: '시세 조회', cost: 1 },
+  auth:   { label: '정밀 감정', cost: 2 },
+  weigh:  { label: '저울 측정', cost: 1 },
+  purity: { label: '순도 검사', cost: 2 },
+  origin: { label: '출처 묻기', cost: 0 },
+};
+
+function useTool(t) {
+  const c = G.cur, it = c.item, T = TOOLS[t];
+  if (c.status !== 'talk' || G.ap < T.cost) return;
+  if (t === 'origin' ? c.asked : c.rev[t] !== undefined) return;
+  G.ap -= T.cost;
+  c.mood = '';
+  if (t === 'cond') c.rev.cond = it.cond;
+  if (t === 'price') c.rev.price = [it.base * 0.9, it.base * 1.1];
+  if (t === 'weigh') c.rev.weigh = it.don;
+  if (t === 'auth') c.rev.auth = it.fake ? (Math.random() < 0.9 ? '가품' : '정품') : (Math.random() < 0.95 ? '정품' : '가품');
+  if (t === 'purity') c.rev.purity = it.fake ? (Math.random() < 0.95 ? '도금' : it.claimPurity) : (Math.random() < 0.95 ? it.purity : pick(Object.keys(PUR)));
+  if ((t === 'auth' || t === 'purity') && it.fake && ARCH[c.arch].knowFake) {
+    c.patience--; c.say = pick(LINES.fakeNervous); c.mood = 'bad';
+    if (c.patience <= 0) return walkOut();
+  }
+  if (t === 'origin') {
+    c.asked = true;
+    const nervous = G.perks.sharpEye ? it.stolen : it.stolen ? Math.random() < 0.8 : Math.random() < 0.12;
+    c.say = nervous ? pick(LINES.stolen) : pick(ARCH[c.arch].origin);
+    c.mood = nervous ? 'bad' : '';
+  }
+  render();
+}
+
+function makeOffer() {
+  const c = G.cur, o = Math.round(c.offer);
+  if (c.status !== 'talk' || !(o > 0)) return;
+  if (o > G.cash) { c.say = '(금고에 그만한 현금이 없다.)'; c.mood = ''; return render(); }
+  if (o >= c.ask) return deal(o);
+  if (o < c.min * 0.55) {
+    c.patience -= 2; c.insulted = true; c.say = pick(LINES.insult); c.mood = 'bad';
+  } else {
+    c.patience -= 1;
+    if (o >= c.min) {
+      let p = 0.25 + 0.6 * (o - c.min) / Math.max(1, c.ask - c.min);
+      if (c.patience <= 1) p += 0.25;
+      if (Math.random() < p) return deal(o);
+    }
+    c.ask = Math.max(c.min, Math.round(c.ask - (c.ask - o) * R(0.25, 0.45)));
+    c.say = fill(pick(c.mode === 'sell' ? LINES.sellCounter : LINES.pawnCounter), c.ask);
+    c.mood = '';
+  }
+  if (c.patience <= 0) return walkOut();
+  render();
+}
+
+function walkOut() {
+  const c = G.cur;
+  c.status = 'left'; c.say = pick(LINES.leave); c.mood = 'bad';
+  if (c.insulted) { G.rep = clamp(G.rep - 1); }
+  storyFail(c);
+  log(`<span class="chip r">결렬</span><b>${c.name}</b> 손님이 ${c.item.name}을(를) 들고 나갔다.`);
+  render();
+}
+
+function deal(price) {
+  const c = G.cur, it = c.item, A = ARCH[c.arch];
+  if (price > G.cash) return;
+  G.cash -= price;
+  const known = { ...c.rev };
+  let rec;
+  if (c.mode === 'sell') {
+    rec = { ...it, id: G.uid++, cost: price, rev: known, from: c.name, offer: null, offerDay: 0, broker: c.regular === 'broker' };
+    G.inv.push(rec);
+    G.stats.deals++;
+    log(`<span class="chip y">매입</span><b>${it.name}</b> ${won(price)}`);
+  } else {
+    let rp = it.fake && A.knowFake ? 0.05 : A.redeem;
+    if (price > c.perceived * 0.85) rp *= 0.5;
+    rec = { no: G.ticket++, item: { ...it, rev: known }, loan: price, due: G.day + TERM, rp, owner: c.name };
+    G.pawns.push(rec);
+    G.stats.pawns++;
+    log(`<span class="chip y">전당</span><b>${it.name}</b> ${won(price)} 대출 · 기한 D${G.day + TERM}`);
+  }
+  const ratio = price / c.perceived;
+  if (A.vulnerable && ratio < (c.mode === 'sell' ? 0.3 : 0.2)) {
+    G.rep = clamp(G.rep - 4); log(`<span class="chip r">평판 -4</span>헐값에 받았다는 소문이 돈다.`);
+  } else if (!it.fake && ratio >= (c.mode === 'sell' ? 0.55 : 0.4)) {
+    G.rep = clamp(G.rep + 2);
+  }
+  c.status = 'deal'; c.say = A.accept; c.mood = 'good'; c.final = price;
+  const S = c.story && STORY[c.story];
+  if (S && S.onDeal) S.onDeal(G.reg[S.arc], price, rec, c);
+  render();
+}
+
+function rejectGuest() {
+  const c = G.cur; if (c.status !== 'talk') return;
+  c.status = 'rejected'; c.say = LINES.reject; c.mood = '';
+  storyFail(c);
+  render();
+}
+
+function askBuyer(id) {
+  const x = G.inv.find(v => v.id === id);
+  if (!x || x.offerDay === G.day || G.phase !== 'day' && G.phase !== 'closed') return;
+  x.offerDay = G.day;
+  if (x.fake && Math.random() < 0.7) {
+    x.offer = Math.max(1, Math.round(realOf(x)));
+    x.offerNote = '구매자가 가품을 알아봤다. 평판 -3';
+    G.rep = clamp(G.rep - 3);
+  } else {
+    x.offer = Math.max(1, Math.round(realOf(x) * R(0.85, 1.25) * (0.92 + G.rep / 600)));
+    x.offerNote = pick(LINES.buyer) + ' 제시';
+  }
+  render();
+}
+
+function sellItem(id, goldShop) {
+  const i = G.inv.findIndex(v => v.id === id); if (i < 0) return;
+  const x = G.inv[i];
+  const price = goldShop ? Math.max(1, Math.round(realOf(x))) : x.offer;
+  if (!price) return;
+  G.cash += price; G.inv.splice(i, 1);
+  const pf = price - x.cost; G.stats.sold++; G.stats.profit += pf;
+  log(`<span class="chip g">판매</span><b>${x.name}</b> ${won(price)} <span class="${pf >= 0 ? 'pos' : 'neg'}">(${pf >= 0 ? '+' : ''}${won(pf)})</span>${goldShop && x.fake ? ' · 도금이었다' : ''}`);
+  render();
+}
+
+function holdItem(id) { const x = G.inv.find(v => v.id === id); if (x) { x.offer = null; render(); } }
+
+function endDay() {
+  const rep = [];
+  G.pawns = G.pawns.filter(p => {
+    if (p.story || p.due > G.day) return true;
+    if (Math.random() < p.rp) {
+      const pay = Math.round(p.loan * (1 + INTEREST));
+      G.cash += pay; G.stats.redeemed++; G.stats.profit += pay - p.loan;
+      rep.push(`<span class="chip g">환매</span>${p.no}번 ${p.owner} 손님이 ${p.item.name}을(를) 찾아갔다. <b class="pos">+${won(pay)}</b>`);
+    } else {
+      G.inv.push(invFromTicket(p));
+      G.stats.forfeited++;
+      rep.push(`<span class="chip y">유질</span>${p.no}번 기한 만료. ${p.item.name}이(가) 금고로 들어왔다.`);
+    }
+    return false;
+  });
+  const seize = (name, cost) => { G.rep = clamp(G.rep - 12); G.stats.seized++; G.stats.profit -= cost;
+    rep.push(`<span class="chip r">압수</span>경찰 방문. ${name}은(는) 도난품이었다. <b class="neg">-${won(cost)}</b>, 평판 -12`); };
+  G.inv = G.inv.filter(x => { if (x.stolen && Math.random() < 0.3) { seize(x.name, x.cost); return false; } return true; });
+  G.pawns = G.pawns.filter(p => { if (p.item.stolen && Math.random() < 0.3) { seize(p.item.name, p.loan); return false; } return true; });
+  if (G.day % 7 === 0) { G.cash -= RENT; rep.push(`<span class="chip r">월세</span>가게 월세를 냈다. <b class="neg">-${won(RENT)}</b>`); }
+  const old = G.gold; G.gold = Math.round(G.gold * R(0.95, 1.06) * 10) / 10;
+  rep.push(`<span class="chip y">금시세</span>내일 1돈 ${old} → <b>${G.gold}</b>만원`);
+  G.report = rep;
+  G.phase = G.cash < 0 ? 'bankrupt' : G.day >= DAYS ? 'end' : 'night';
+  render();
+}
+
+function nextDay() { G.day++; G.inv.forEach(x => { x.offer = null; }); startDay(); }
+
+/* ---------- 3D 감정 패드 ---------- */
+// three.js가 없거나 WebGL이 안 되면 V.ok=false로 남고 이모지로 대체된다.
+const V = { ok: false, key: null, rx: 0, ry: 0.5, drag: null, wear: 0, thumbs: {}, tex: {}, want: null, w: 0, h: 0 };
+const WEAR = { S: 0, A: 0.06, B: 0.16, C: 0.3 };
+const GOLD_HEX = { '24K': '#f0b233', '18K': '#e6be66', '14K': '#d9bf92' };
+const PI = Math.PI;
+const lin = h => new THREE.Color(h).convertSRGBToLinear();
+
+function mat(hex, metal = 0, rough = 0.5, ext = {}) {
+  return new THREE.MeshStandardMaterial({ color: lin(hex), metalness: metal, roughness: Math.min(1, rough + V.wear), ...ext });
+}
+function gloss(hex, rough = 0.15, ext = {}) {
+  return new THREE.MeshPhysicalMaterial({ color: lin(hex), metalness: 0, roughness: Math.min(1, rough + V.wear), clearcoat: 1, clearcoatRoughness: 0.08 + V.wear, ...ext });
+}
+function add(g, geo, m, p = [0, 0, 0], r = [0, 0, 0]) {
+  const me = new THREE.Mesh(geo, m); me.position.set(...p); me.rotation.set(...r); g.add(me); return me;
+}
+function rrShape(w, h, r) {
+  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+  return s;
+}
+// w(x) × h(y) × d(z) 둥근 상자
+function rbox(w, h, d, r, bev = 0.02) {
+  const g = new THREE.ExtrudeGeometry(rrShape(w - 2 * bev, h - 2 * bev, Math.max(0.002, r - bev)),
+    { depth: Math.max(0.001, d - 2 * bev), bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 3, curveSegments: 10 });
+  g.translate(0, 0, -(d - 2 * bev) / 2);
+  return g;
+}
+const cyl = (rt, rb, h, s = 48) => new THREE.CylinderGeometry(rt, rb, h, s);
+function chainAlong(g, curve, n, R, r, m) {
+  const geo = new THREE.TorusGeometry(R, r, 8, 18);
+  for (let i = 0; i < n; i++) {
+    const t = i / n, p = curve.getPointAt(t), tan = curve.getTangentAt(t);
+    const l = new THREE.Mesh(geo, m);
+    l.position.copy(p); l.lookAt(p.clone().add(tan));
+    l.rotateZ(i % 2 ? PI / 2 : 0); l.rotateX(PI / 2);
+    g.add(l);
+  }
+}
+function canvasTex(key, w, h, draw, rep = 1) {
+  if (V.tex[key]) return V.tex[key];
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep);
+  return (V.tex[key] = t);
+}
+const TEX = {
+  quilt: () => canvasTex('quilt', 256, 256, (x, w) => {
+    x.fillStyle = '#1a1a1a'; x.fillRect(0, 0, w, w);
+    x.strokeStyle = '#060606'; x.lineWidth = 10;
+    x.beginPath(); x.moveTo(0, 0); x.lineTo(w, w); x.moveTo(w, 0); x.lineTo(0, w); x.stroke();
+    x.strokeStyle = 'rgba(255,255,255,.08)'; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(6, 0); x.lineTo(w, w - 6); x.moveTo(w - 6, 0); x.lineTo(0, w - 6); x.stroke();
+  }, 3.2),
+  monogram: () => canvasTex('mono', 256, 256, (x, w) => {
+    x.fillStyle = '#5a3a22'; x.fillRect(0, 0, w, w);
+    x.fillStyle = '#caa56c';
+    const flower = (cx, cy, s) => { for (let k = 0; k < 4; k++) { x.beginPath(); x.ellipse(cx + Math.cos(k * PI / 2) * s, cy + Math.sin(k * PI / 2) * s, s * 0.8, s * 0.45, k * PI / 2, 0, 2 * PI); x.fill(); } };
+    flower(64, 64, 14); flower(192, 192, 14);
+    x.beginPath(); x.arc(192, 64, 14, 0, 2 * PI); x.lineWidth = 6; x.strokeStyle = '#caa56c'; x.stroke();
+    x.beginPath(); x.arc(64, 192, 5, 0, 2 * PI); x.fill();
+  }, 2.6),
+  leatherette: () => canvasTex('leath', 256, 256, (x, w) => {
+    x.fillStyle = '#1b1b1b'; x.fillRect(0, 0, w, w);
+    for (let i = 0; i < 2600; i++) { x.fillStyle = `rgba(${Math.random() < 0.5 ? '255,255,255,.06' : '0,0,0,.35'})`; x.fillRect(Math.random() * w, Math.random() * w, 2, 2); }
+  }, 4),
+  keys: () => canvasTex('keys', 512, 200, (x, w, h) => {
+    x.fillStyle = '#16171a'; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#2b2d31';
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 14; c++) x.fillRect(6 + c * 36, 6 + r * 32, 30, 26);
+  }),
+  screen: () => canvasTex('screen', 512, 320, (x, w, h) => {
+    const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#1d2b64'); g.addColorStop(0.5, '#6a3d8f'); g.addColorStop(1, '#f2a65a');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.fillStyle = 'rgba(255,255,255,.18)'; x.fillRect(0, 0, w, 14);
+  }),
+  game: () => canvasTex('game', 512, 300, (x, w, h) => {
+    const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#5ec8f2'); g.addColorStop(1, '#bdeaff');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#4caf50'; x.fillRect(0, h * 0.72, w, h);
+    x.fillStyle = '#8d5a2b'; x.fillRect(0, h * 0.82, w, h);
+    x.fillStyle = '#e53935'; x.fillRect(w * 0.3, h * 0.55, 34, 44);
+    x.fillStyle = '#ffd54f'; for (let i = 0; i < 4; i++) { x.beginPath(); x.arc(w * 0.5 + i * 40, h * 0.45, 10, 0, 2 * PI); x.fill(); }
+  }),
+  celadon: () => canvasTex('celadon', 1024, 512, (x, w, h) => {
+    const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#5f8573'); g.addColorStop(0.6, '#79998a'); g.addColorStop(1, '#55786a');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    const crane = (cx, cy, s, dir) => {
+      x.save(); x.translate(cx, cy); x.scale(dir * s, s);
+      x.fillStyle = '#f4f1e6'; x.strokeStyle = '#2d2a26'; x.lineWidth = 1.6;
+      x.beginPath(); x.ellipse(0, 0, 16, 6, -0.2, 0, 2 * PI); x.fill(); x.stroke();
+      x.beginPath(); x.moveTo(-4, -2); x.lineTo(-22, -26); x.lineTo(4, -4); x.closePath(); x.fill(); x.stroke();
+      x.beginPath(); x.moveTo(2, 2); x.lineTo(26, 18); x.lineTo(8, 4); x.closePath(); x.fill(); x.stroke();
+      x.beginPath(); x.moveTo(14, -3); x.quadraticCurveTo(26, -10, 30, -4); x.stroke();
+      x.fillStyle = '#2d2a26'; x.beginPath(); x.arc(30, -4, 2.4, 0, 2 * PI); x.fill();
+      x.restore();
+    };
+    for (let i = 0; i < 6; i++) {
+      const cx = (i + 0.5) * w / 6;
+      x.strokeStyle = 'rgba(245,242,232,.85)'; x.lineWidth = 2;
+      x.beginPath(); x.arc(cx, h * 0.42, 52, 0, 2 * PI); x.stroke();
+      x.beginPath(); x.arc(cx, h * 0.42, 46, 0, 2 * PI); x.stroke();
+      crane(cx, h * 0.42, 1.25, i % 2 ? 1 : -1);
+      crane(cx + w / 12, h * (i % 2 ? 0.66 : 0.24), 0.9, i % 2 ? -1 : 1);
+      x.strokeStyle = 'rgba(245,242,232,.7)'; x.lineWidth = 2;
+      x.beginPath(); x.moveTo(cx + 40, h * 0.78); x.bezierCurveTo(cx + 55, h * 0.72, cx + 70, h * 0.84, cx + 85, h * 0.78); x.stroke();
+    }
+    x.strokeStyle = 'rgba(40,60,50,.18)'; x.lineWidth = 1;
+    for (let i = 0; i < 160; i++) { const px = Math.random() * w, py = Math.random() * h; x.beginPath(); x.moveTo(px, py); x.lineTo(px + R(-30, 30), py + R(-30, 30)); x.stroke(); }
+  }),
+};
+
+function watch(o) {
+  const g = new THREE.Group(), steel = mat('#dfe2e6', 1, 0.16), brushed = mat('#c8ccd2', 1, 0.36);
+  add(g, cyl(0.62, 0.62, 0.26, 72), steel, [0, 0, 0], [PI / 2, 0, 0]);
+  add(g, new THREE.TorusGeometry(0.565, 0.075, 24, 96), mat(o.bezel, 0.3, 0.12), [0, 0, 0.14]);
+  const marks = mat('#e9e9ea', 1, 0.2);
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12 * 2 * PI;
+    add(g, new THREE.BoxGeometry(0.025, i % 3 ? 0.05 : 0.08, 0.01), marks, [Math.sin(a) * 0.565, Math.cos(a) * 0.565, 0.217], [0, 0, -a]);
+  }
+  add(g, cyl(0.5, 0.5, 0.02, 72), mat(o.dial, 0.4, 0.3), [0, 0, 0.12], [PI / 2, 0, 0]);
+  const lume = mat('#f3f0e2', 0.2, 0.35), rim = mat('#e6e6e6', 1, 0.2);
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12 * 2 * PI, p = [Math.sin(a) * 0.4, Math.cos(a) * 0.4, 0.14];
+    if (i % 3 === 0) add(g, new THREE.BoxGeometry(0.06, 0.13, 0.025), lume, p, [0, 0, -a]);
+    else add(g, cyl(0.032, 0.032, 0.025, 20), lume, p, [PI / 2, 0, 0]);
+    add(g, cyl(0.04, 0.04, 0.012, 20), rim, [p[0], p[1], 0.13], [PI / 2, 0, 0]);
+  }
+  const hand = (a, L, wd, m, z) => add(g, new THREE.BoxGeometry(wd, L, 0.012), m, [Math.sin(a) * L / 2, Math.cos(a) * L / 2, z], [0, 0, -a]);
+  hand(-1.05, 0.27, 0.05, rim, 0.155); hand(1.05, 0.4, 0.04, rim, 0.165); hand(3.7, 0.44, 0.012, mat(o.second, 0.3, 0.3), 0.175);
+  add(g, cyl(0.035, 0.035, 0.03, 20), rim, [0, 0, 0.175], [PI / 2, 0, 0]);
+  add(g, cyl(0.5, 0.5, 0.025, 72), new THREE.MeshPhysicalMaterial({ transparent: true, opacity: 0.12, roughness: 0, clearcoat: 1 }), [0, 0, 0.2], [PI / 2, 0, 0]);
+  add(g, cyl(0.085, 0.085, 0.14, 28), steel, [0.68, 0, 0], [0, 0, PI / 2]);
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) add(g, new THREE.BoxGeometry(0.14, 0.26, 0.17), steel, [sx * 0.3, sy * 0.62, -0.02]);
+  for (const sy of [1, -1]) for (let i = 0; i < 5; i++) {
+    const y = sy * (0.82 + i * 0.19), z = -0.05 - i * i * 0.045, rx = -sy * i * 0.17;
+    add(g, rbox(0.5, 0.18, 0.1, 0.03), brushed, [0, y, z], [rx, 0, 0]);
+    add(g, rbox(0.17, 0.185, 0.115, 0.02, 0.015), steel, [0, y, z + 0.004], [rx, 0, 0]);
+  }
+  return g;
+}
+
+function flapBag() {
+  const g = new THREE.Group();
+  const leather = mat('#1b1b1b', 0, 0.5, { map: TEX.quilt(), bumpMap: TEX.quilt(), bumpScale: 0.035 });
+  const gold = mat('#e2bf6c', 1, 0.2);
+  add(g, rbox(2.0, 1.3, 0.62, 0.14, 0.05), leather);
+  add(g, rbox(2.02, 0.84, 0.08, 0.12, 0.03), leather, [0, 0.23, 0.33]);
+  add(g, rbox(0.34, 0.2, 0.05, 0.05, 0.015), gold, [0, -0.14, 0.39]);
+  add(g, rbox(0.16, 0.1, 0.06, 0.04, 0.012), gold, [0, -0.14, 0.42]);
+  const curve = new THREE.CatmullRomCurve3([[-0.92, 0.6, 0], [-0.85, 1.3, 0], [-0.45, 1.85, 0], [0, 1.98, 0], [0.45, 1.85, 0], [0.85, 1.3, 0], [0.92, 0.6, 0]].map(p => new THREE.Vector3(...p)));
+  chainAlong(g, curve, 46, 0.055, 0.018, gold);
+  add(g, new THREE.TubeGeometry(curve, 80, 0.02, 8), mat('#111111', 0, 0.6));
+  return g;
+}
+
+function speedy() {
+  const g = new THREE.Group();
+  const canvas = mat('#ffffff', 0, 0.55, { map: TEX.monogram() });
+  const vachetta = mat('#c48e5c', 0, 0.55), gold = mat('#d9b25f', 1, 0.22);
+  add(g, rbox(2.0, 1.05, 0.95, 0.42, 0.06), canvas);
+  add(g, rbox(2.03, 0.13, 0.98, 0.06, 0.02), vachetta, [0, 0.47, 0]);
+  for (const sx of [-1, 1]) add(g, rbox(0.12, 0.6, 0.99, 0.05, 0.02), vachetta, [sx * 0.86, 0.1, 0]);
+  for (const sz of [-1, 1]) {
+    add(g, new THREE.TorusGeometry(0.34, 0.045, 14, 48, PI), vachetta, [0, 0.52, sz * 0.22]);
+    for (const sx of [-1, 1]) add(g, rbox(0.16, 0.18, 0.04, 0.03, 0.01), vachetta, [sx * 0.34, 0.47, sz * 0.49]);
+  }
+  add(g, new THREE.BoxGeometry(1.7, 0.02, 0.05), gold, [0, 0.545, 0]);
+  add(g, rbox(0.16, 0.2, 0.08, 0.04, 0.015), gold, [0.42, 0.18, 0.52]);
+  add(g, new THREE.TorusGeometry(0.055, 0.015, 8, 20, PI), gold, [0.42, 0.29, 0.52]);
+  return g;
+}
+
+function laptop() {
+  const g = new THREE.Group(), al = mat('#a3a7ae', 1, 0.3);
+  add(g, rbox(2.3, 1.55, 0.09, 0.08, 0.02), al, [0, 0, 0], [-PI / 2, 0, 0]);
+  add(g, new THREE.PlaneGeometry(1.95, 0.72), mat('#ffffff', 0, 0.6, { map: TEX.keys() }), [0, 0.047, -0.2], [-PI / 2, 0, 0]);
+  add(g, new THREE.ShapeGeometry(rrShape(0.82, 0.5, 0.04)), mat('#9a9ea5', 0.6, 0.35), [0, 0.047, 0.43], [-PI / 2, 0, 0]);
+  const lid = new THREE.Group(); lid.position.set(0, 0.045, -0.77); lid.rotation.x = -0.3; g.add(lid);
+  add(lid, rbox(2.3, 1.5, 0.06, 0.08, 0.02), al, [0, 0.75, 0]);
+  add(lid, new THREE.ShapeGeometry(rrShape(2.24, 1.44, 0.07)), mat('#050505', 0, 0.2), [0, 0.75, 0.031]);
+  add(lid, new THREE.PlaneGeometry(2.08, 1.3), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: TEX.screen(), roughness: 0.1 }), [0, 0.76, 0.032]);
+  return g;
+}
+
+function phone() {
+  const g = new THREE.Group(), ti = mat('#55575c', 1, 0.32), glass = gloss('#0c0d10', 0.05);
+  add(g, rbox(0.78, 1.6, 0.09, 0.13, 0.025), ti);
+  add(g, new THREE.ShapeGeometry(rrShape(0.73, 1.55, 0.11)), new THREE.MeshStandardMaterial({ color: 0x050507, emissive: 0xffffff, emissiveMap: TEX.screen(), emissiveIntensity: 0.85, roughness: 0.05 }), [0, 0, 0.047]);
+  add(g, new THREE.ShapeGeometry(rrShape(0.2, 0.055, 0.027)), mat('#000000', 0, 0.2), [0, 0.68, 0.048]);
+  add(g, rbox(0.36, 0.36, 0.04, 0.09, 0.012), mat('#4a4c51', 0.8, 0.25), [-0.17, 0.56, -0.06]);
+  for (const [x, y] of [[-0.26, 0.65], [-0.26, 0.47], [-0.08, 0.56]]) {
+    add(g, cyl(0.072, 0.072, 0.04, 32), mat('#2c2d30', 1, 0.2), [x, y, -0.09], [PI / 2, 0, 0]);
+    add(g, cyl(0.05, 0.05, 0.042, 32), glass, [x, y, -0.092], [PI / 2, 0, 0]);
+  }
+  add(g, rbox(0.03, 0.18, 0.04, 0.012, 0.008), ti, [0.395, 0.3, 0]);
+  return g;
+}
+
+function console_() {
+  const g = new THREE.Group();
+  add(g, rbox(1.55, 0.9, 0.1, 0.05, 0.02), mat('#222327', 0, 0.45));
+  add(g, new THREE.ShapeGeometry(rrShape(1.4, 0.79, 0.03)), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: TEX.game(), emissiveIntensity: 0.9, roughness: 0.08 }), [0, 0, 0.051]);
+  const dark = mat('#1a1a1c', 0, 0.5);
+  for (const [sx, col] of [[-1, '#2c6fd8'], [1, '#e8453c']]) {
+    add(g, rbox(0.36, 0.9, 0.13, 0.16, 0.03), mat(col, 0, 0.42), [sx * 0.96, 0, 0]);
+    const sy = sx < 0 ? 0.2 : -0.16;
+    add(g, cyl(0.065, 0.075, 0.06, 28), dark, [sx * 0.96, sy, 0.09], [PI / 2, 0, 0]);
+    for (let k = 0; k < 4; k++) {
+      const a = k * PI / 2;
+      add(g, cyl(0.03, 0.03, 0.03, 16), dark, [sx * 0.96 + Math.cos(a) * 0.075, -sy + Math.sin(a) * 0.075, 0.075], [PI / 2, 0, 0]);
+    }
+  }
+  return g;
+}
+
+function camera() {
+  const g = new THREE.Group(), chrome = mat('#d3d6da', 1, 0.18), blackM = mat('#161616', 0.8, 0.35);
+  add(g, rbox(1.7, 0.56, 0.48, 0.2, 0.03), mat('#ffffff', 0, 0.75, { map: TEX.leatherette(), bumpMap: TEX.leatherette(), bumpScale: 0.02 }), [0, -0.12, 0]);
+  add(g, rbox(1.7, 0.34, 0.46, 0.15, 0.03), chrome, [0, 0.3, 0]);
+  add(g, cyl(0.36, 0.36, 0.06, 64), chrome, [0, -0.06, 0.27], [PI / 2, 0, 0]);
+  add(g, cyl(0.3, 0.3, 0.45, 64), blackM, [0, -0.06, 0.5], [PI / 2, 0, 0]);
+  for (let k = 0; k < 6; k++) add(g, new THREE.TorusGeometry(0.305, 0.012, 8, 64), chrome, [0, -0.06, 0.4 + k * 0.022]);
+  add(g, cyl(0.31, 0.31, 0.05, 64), chrome, [0, -0.06, 0.72], [PI / 2, 0, 0]);
+  add(g, cyl(0.22, 0.22, 0.02, 64), new THREE.MeshPhysicalMaterial({ color: lin('#1c2340'), metalness: 0.3, roughness: 0, clearcoat: 1 }), [0, -0.06, 0.745], [PI / 2, 0, 0]);
+  add(g, new THREE.PlaneGeometry(0.3, 0.16), gloss('#14171c', 0.05), [-0.52, 0.32, 0.232]);
+  add(g, new THREE.PlaneGeometry(0.12, 0.12), gloss('#14171c', 0.05), [-0.12, 0.32, 0.232]);
+  add(g, new THREE.PlaneGeometry(0.22, 0.15), mat('#efeee8', 0, 0.8), [0.36, 0.32, 0.232]);
+  add(g, cyl(0.14, 0.14, 0.08, 40), chrome, [0.45, 0.5, 0]);
+  add(g, cyl(0.05, 0.05, 0.06, 20), chrome, [0.66, 0.52, 0.08]);
+  add(g, cyl(0.13, 0.13, 0.1, 40), chrome, [-0.55, 0.51, 0]);
+  add(g, new THREE.BoxGeometry(0.3, 0.03, 0.2), chrome, [0, 0.48, 0]);
+  for (const sx of [-1, 1]) add(g, new THREE.TorusGeometry(0.04, 0.012, 8, 20), chrome, [sx * 0.86, 0.3, 0], [0, PI / 2, 0]);
+  return g;
+}
+
+function guitar() {
+  const outer = new THREE.Group(), g = new THREE.Group(); outer.add(g); g.rotation.z = -0.5;
+  const body = gloss('#b3541e', 0.18), pg = mat('#f4efe4', 0, 0.35), chrome = mat('#dcdfe3', 1, 0.15), maple = gloss('#e5c38b', 0.3);
+  const ell = (cx, cy, rx, ry, depth, m, z) => {
+    const s = new THREE.Shape(); s.absellipse(cx, cy, rx, ry, 0, 2 * PI);
+    const geo = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 4, curveSegments: 40 });
+    geo.translate(0, 0, z); return add(g, geo, m);
+  };
+  ell(0, -0.45, 0.78, 0.62, 0.16, body, -0.08); ell(0, 0.18, 0.6, 0.5, 0.16, body, -0.08);
+  ell(-0.44, 0.6, 0.17, 0.36, 0.16, body, -0.08); ell(0.42, 0.48, 0.15, 0.28, 0.16, body, -0.08);
+  ell(0.06, -0.2, 0.55, 0.48, 0.008, pg, 0.11);
+  for (const [y, rz] of [[0.12, 0], [-0.12, 0], [-0.38, 0.2]]) add(g, rbox(0.3, 0.08, 0.04, 0.035, 0.01), pg, [0, y, 0.13], [0, 0, rz]);
+  add(g, rbox(0.5, 0.13, 0.03, 0.02, 0.008), chrome, [0, -0.62, 0.125]);
+  for (const [x, y] of [[0.36, -0.42], [0.42, -0.6], [0.5, -0.78]]) add(g, cyl(0.045, 0.05, 0.06, 20), pg, [x, y, 0.15], [PI / 2, 0, 0]);
+  add(g, new THREE.BoxGeometry(0.21, 1.95, 0.08), maple, [0, 1.42, 0.08]);
+  for (let k = 1; k <= 21; k++) { const y = 2.38 - 1.9 * (1 - Math.pow(2, -k / 12)) * 1.25; add(g, new THREE.BoxGeometry(0.21, 0.008, 0.012), chrome, [0, y, 0.125]); }
+  for (const k of [3, 5, 7, 9, 12, 15]) { const y = 2.38 - 1.9 * (1 - Math.pow(2, -(k - 0.5) / 12)) * 1.25; add(g, cyl(0.014, 0.014, 0.01, 12), mat('#222', 0, 0.5), [0, y, 0.122], [PI / 2, 0, 0]); }
+  add(g, rbox(0.34, 0.6, 0.05, 0.13, 0.015), maple, [0.07, 2.65, 0.07]);
+  for (let k = 0; k < 6; k++) add(g, cyl(0.025, 0.025, 0.08, 14), chrome, [-0.06, 2.42 + k * 0.09, 0.12], [PI / 2, 0, 0]);
+  for (let k = 0; k < 6; k++) add(g, cyl(0.004, 0.004, 3.05, 6), chrome, [-0.065 + k * 0.026, 0.88, 0.15]);
+  return outer;
+}
+
+function diamondRing() {
+  const g = new THREE.Group(), plat = mat('#e8eaed', 1, 0.1);
+  add(g, new THREE.TorusGeometry(0.55, 0.065, 28, 96), plat);
+  add(g, cyl(0.1, 0.07, 0.14, 32), plat, [0, 0.64, 0]);
+  for (let k = 0; k < 4; k++) { const a = k * PI / 2 + PI / 4; add(g, cyl(0.017, 0.017, 0.32, 10), plat, [Math.cos(a) * 0.15, 0.8, Math.sin(a) * 0.15], [Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35]); }
+  const stone = new THREE.MeshStandardMaterial({ color: lin('#f6f8ff'), metalness: 1, roughness: 0.02, flatShading: true });
+  add(g, cyl(0.25, 0.0, 0.26, 16), stone, [0, 0.8, 0]);
+  add(g, cyl(0.16, 0.25, 0.09, 16), stone, [0, 0.975, 0]);
+  return g;
+}
+
+function twinRings(it) {
+  const g = new THREE.Group(), gold = mat(GOLD_HEX[it.fake ? it.claimPurity : it.purity] || GOLD_HEX['18K'], 1, 0.14);
+  add(g, new THREE.TorusGeometry(0.46, 0.11, 32, 110), gold, [-0.2, 0, 0], [0.35, 0.45, 0]);
+  add(g, new THREE.TorusGeometry(0.46, 0.11, 32, 110), gold, [0.2, -0.02, 0.06], [-0.25, -0.55, 0.1]);
+  return g;
+}
+
+function necklace(it) {
+  const outer = new THREE.Group(), g = new THREE.Group(); outer.add(g); g.rotation.x = -1.0;
+  const gold = mat(GOLD_HEX[it.fake ? it.claimPurity : it.purity] || GOLD_HEX['18K'], 1, 0.14);
+  const pts = [[0, 1], [0.7, 0.85], [0.98, 0.3], [0.8, -0.4], [0.35, -0.95], [0, -1.15], [-0.35, -0.95], [-0.8, -0.4], [-0.98, 0.3], [-0.7, 0.85]];
+  const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], 0)), true);
+  chainAlong(g, curve, 120, 0.04, 0.013, gold);
+  add(g, new THREE.TorusGeometry(0.05, 0.015, 10, 24), gold, [0, -1.21, 0], [0, PI / 2, 0]);
+  add(g, cyl(0.17, 0.17, 0.04, 48), gold, [0, -1.42, 0], [PI / 2, 0, 0]);
+  add(g, new THREE.TorusGeometry(0.17, 0.02, 12, 48), gold, [0, -1.42, 0]);
+  add(g, new THREE.TorusGeometry(0.09, 0.012, 10, 40), gold, [0, -1.42, 0.022]);
+  return outer;
+}
+
+function bracelet(it) {
+  const outer = new THREE.Group(), g = new THREE.Group(); outer.add(g); g.rotation.x = 0.55;
+  const gold = mat(GOLD_HEX[it.fake ? it.claimPurity : it.purity] || GOLD_HEX['18K'], 1, 0.14);
+  const pts = []; for (let k = 0; k < 16; k++) { const a = k / 16 * 2 * PI; pts.push(new THREE.Vector3(Math.cos(a) * 0.75, 0, Math.sin(a) * 0.75)); }
+  chainAlong(g, new THREE.CatmullRomCurve3(pts, true), 30, 0.11, 0.036, gold);
+  add(g, rbox(0.12, 0.1, 0.26, 0.03, 0.015), gold, [0.78, 0, 0], [0, 0, 0]);
+  return outer;
+}
+
+function pen() {
+  const outer = new THREE.Group(), g = new THREE.Group(); outer.add(g); g.rotation.z = 0.95;
+  const resin = gloss('#0b0b0d', 0.08), gold = mat('#e2c06a', 1, 0.18);
+  add(g, cyl(0.085, 0.07, 1.2, 48), resin, [0, -0.2, 0]);
+  add(g, cyl(0.07, 0.05, 0.2, 40), resin, [0, -0.9, 0]);
+  add(g, new THREE.TorusGeometry(0.072, 0.01, 8, 40), gold, [0, -0.8, 0], [PI / 2, 0, 0]);
+  const nib = add(g, cyl(0.0, 0.05, 0.3, 24), gold, [0, -1.15, 0]); nib.scale.z = 0.35;
+  add(g, cyl(0.087, 0.087, 0.06, 40), resin, [0, 0.43, 0]);
+  const cap = new THREE.Group(); cap.position.set(0.42, 0.15, 0); g.add(cap);
+  add(cap, cyl(0.095, 0.092, 0.95, 48), resin);
+  for (const y of [-0.43, -0.4, -0.37]) add(cap, new THREE.TorusGeometry(0.095, 0.009, 8, 40), gold, [0, y, 0], [PI / 2, 0, 0]);
+  add(cap, new THREE.SphereGeometry(0.093, 32, 16, 0, 2 * PI, 0, PI / 2), resin, [0, 0.475, 0]);
+  add(cap, cyl(0.035, 0.035, 0.012, 6), mat('#f6f4ee', 0, 0.3), [0, 0.565, 0]);
+  add(cap, rbox(0.06, 0.78, 0.03, 0.025, 0.01), gold, [0, 0.05, 0.115]);
+  add(cap, new THREE.SphereGeometry(0.03, 16, 12), gold, [0, -0.33, 0.12]);
+  return outer;
+}
+
+function vase() {
+  const g = new THREE.Group();
+  const prof = [[0, -1.2], [0.36, -1.2], [0.4, -1.15], [0.38, -0.9], [0.42, -0.5], [0.55, 0], [0.68, 0.45], [0.66, 0.7], [0.5, 0.88], [0.22, 0.98], [0.16, 1.04], [0.2, 1.11], [0.21, 1.18], [0.15, 1.2], [0.13, 1.1]];
+  const geo = new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), 120);
+  add(g, geo, new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: TEX.celadon(), roughness: 0.35 + V.wear, clearcoat: 0.6, clearcoatRoughness: 0.15 + V.wear, envMapIntensity: 0.6, side: THREE.DoubleSide }));
+  return g;
+}
+
+const BUILD = {
+  rolex: () => watch({ bezel: '#121212', dial: '#0d0e10', second: '#e9e9e9' }),
+  omega: () => watch({ bezel: '#1d3a8a', dial: '#22458f', second: '#d8392b' }),
+  chanel: flapBag, lv: speedy, macbook: laptop, iphone: phone, switch: console_, leica: camera, guitar,
+  diamond: diamondRing, pen, celadon: vase, gneck: necklace, gring: twinRings, gbrace: bracelet,
+};
+
+const modelKey = it => [it.key, it.cond || '', it.gold ? (it.fake ? it.claimPurity : it.purity) : ''].join('|');
+
+function makeModel(it) {
+  V.wear = WEAR[it.cond] || 0;
+  const m = BUILD[it.key](it);
+  V.wear = 0;
+  const box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+  const s = 2.3 / Math.max(size.x, size.y, size.z);
+  m.scale.setScalar(s); m.position.copy(c.multiplyScalar(-s));
+  const wrap = new THREE.Group(); wrap.add(m);
+  return wrap;
+}
+
+function dispose(o) {
+  if (!o) return;
+  o.traverse(n => { if (n.geometry) n.geometry.dispose(); if (n.material) n.material.dispose(); });
+}
+
+function makeStage(env) {
+  const s = new THREE.Scene(); s.environment = env;
+  s.add(new THREE.HemisphereLight(0xfff4e6, 0x2a2018, 0.55));
+  const d = new THREE.DirectionalLight(0xffffff, 1.5); d.position.set(2.5, 4, 3.5); s.add(d);
+  const sc = document.createElement('canvas'); sc.width = sc.height = 128;
+  const x = sc.getContext('2d'), gr = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(0,0,0,.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 2.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false }));
+  sh.rotation.x = -PI / 2; sh.position.y = -1.3; s.add(sh);
+  return s;
+}
+
+function envMap(r) {
+  const s = new THREE.Scene();
+  s.add(new THREE.Mesh(new THREE.BoxGeometry(12, 12, 12), new THREE.MeshBasicMaterial({ color: lin('#3d342c'), side: THREE.BackSide })));
+  const panel = (w, h, hex, k, pos) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k), side: THREE.DoubleSide }));
+    m.position.set(...pos); m.lookAt(0, 0, 0); s.add(m);
+  };
+  panel(7, 7, '#ffffff', 3.2, [0, 5.8, 0]);
+  panel(2, 8, '#ffffff', 2.2, [-5.8, 0.5, 1]);
+  panel(2, 8, '#ffd8a0', 2.0, [5.8, 0.5, -1]);
+  panel(6, 3, '#ffffff', 0.9, [0, 0.5, 5.8]);
+  return new THREE.PMREMGenerator(r).fromScene(s, 0.035).texture;
+}
+
+function initViewer() {
+  if (!window.THREE) return;
+  try {
+    const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    r.outputEncoding = THREE.sRGBEncoding; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
+    V.r = r;
+    const env = envMap(r);
+    V.scene = makeStage(env); V.tScene = makeStage(env);
+    V.cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); V.cam.position.set(0, 1.2, 5.6); V.cam.lookAt(0, -0.1, 0);
+    const cv = r.domElement;
+    cv.addEventListener('pointerdown', e => { V.drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointermove', e => {
+      if (!V.drag) return;
+      V.ry += (e.clientX - V.drag.x) * 0.012; V.rx = clamp(V.rx + (e.clientY - V.drag.y) * 0.008, -0.8, 0.8);
+      V.drag = { x: e.clientX, y: e.clientY };
+    });
+    const up = () => { V.drag = null; };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    V.reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    V.ok = true;
+    requestAnimationFrame(loop);
+  } catch (e) { V.ok = false; }
+}
+
+function loop() {
+  requestAnimationFrame(loop);
+  const cv = V.r.domElement;
+  if (!cv.isConnected || !V.wrap) return;
+  const host = cv.parentElement, w = host.clientWidth, h = host.clientHeight;
+  if (w && h && (w !== V.w || h !== V.h)) { V.w = w; V.h = h; V.r.setSize(w, h, false); V.cam.aspect = w / h; V.cam.updateProjectionMatrix(); }
+  if (!V.drag && !V.reduced) V.ry += 0.005;
+  V.wrap.rotation.set(V.rx, V.ry, 0);
+  V.r.render(V.scene, V.cam);
+}
+
+function stageSet(it) {
+  const k = modelKey(it);
+  if (V.key === k) return;
+  if (V.wrap) { V.scene.remove(V.wrap); dispose(V.wrap); }
+  V.wrap = makeModel(it); V.scene.add(V.wrap); V.key = k; V.ry = 0.5; V.rx = 0;
+}
+
+function thumb(it, cls = 'th') {
+  if (!V.ok || !BUILD[it.key]) return `<span class="e" aria-hidden="true">${it.e}</span>`;
+  const k = modelKey(it);
+  if (!V.thumbs[k]) {
+    const w = makeModel(it); w.rotation.set(0.1, 0.55, 0); V.tScene.add(w);
+    const r = V.r, pr = r.getPixelRatio(), aspect = V.cam.aspect;
+    r.setPixelRatio(1); r.setSize(120, 120, false); V.cam.aspect = 1; V.cam.updateProjectionMatrix();
+    r.render(V.tScene, V.cam);
+    V.thumbs[k] = r.domElement.toDataURL('image/png');
+    r.setPixelRatio(pr); V.cam.aspect = aspect; V.cam.updateProjectionMatrix();
+    V.w = 0; // 다음 프레임에 원래 크기로 복구
+    V.tScene.remove(w); dispose(w);
+  }
+  return `<img class="${cls}" src="${V.thumbs[k]}" alt="">`;
+}
+
+function stageHTML(it) {
+  V.want = it;
+  return `<div class="stage"><span class="fallback" aria-hidden="true">${it.e}</span></div>`;
+}
+
+function attachStage() {
+  const st = document.querySelector('.stage');
+  if (!st || !V.ok || !V.want) return;
+  stageSet(V.want);
+  st.replaceChildren(V.r.domElement);
+  st.insertAdjacentHTML('beforeend', '<span class="stage-cap">드래그해서 돌려보기</span>');
+}
+
+/* ---------- 렌더 ---------- */
+function knownNotes(it, rev) {
+  const rows = [];
+  if (rev.cond) rows.push(['상태', `${rev.cond}급`, rev.cond !== it.claimCond ? 'warn' : '']);
+  if (rev.price) rows.push(['S급 정품 시세', `${Math.round(rev.price[0])}~${Math.round(rev.price[1])}만원`, '']);
+  if (rev.auth) rows.push(['정밀 감정 (90%)', rev.auth, rev.auth === '가품' ? 'warn' : 'ok']);
+  if (rev.weigh !== undefined) rows.push(['실측 무게', `${rev.weigh}돈 (${(rev.weigh * 3.75).toFixed(2)}g)`, rev.weigh !== it.claimDon ? 'warn' : '']);
+  if (rev.purity) rows.push(['순도 (95%)', rev.purity, rev.purity === '도금' ? 'warn' : rev.purity !== it.claimPurity ? 'warn' : 'ok']);
+  return rows;
+}
+
+function goldEst(it, rev) {
+  if (rev.weigh === undefined || !rev.purity || rev.purity === '도금') return null;
+  return rev.weigh * G.gold * PUR[rev.purity] * 0.95;
+}
+
+function renderCounter() {
+  if (G.phase === 'closed') {
+    return `<section class="counter"><div class="qbar"><span>오늘 손님 <b>${G.served}/${G.queue}</b></span></div>
+      <div class="bubble">마지막 손님이 나갔다. 금고에 있는 물건을 정리하고 셔터를 내리자.</div>
+      <div class="actions"><button class="btn primary" data-act="endDay">영업 마감</button></div></section>`;
+  }
+  const c = G.cur; if (!c) return '';
+  if (c.kind === 'choice') return renderChoice(c);
+  const it = c.item, A = ARCH[c.arch];
+  const claim = it.gold ? `손님 말: ${it.claimPurity}, 약 ${it.claimDon}돈 · 정품 금` : `손님 말: 상태 ${it.claimCond}급 · 정품`;
+  const notes = knownNotes(it, c.rev);
+  const est = it.gold ? goldEst(it, c.rev) : null;
+  if (est !== null) notes.push(['금은방 매입가', won(est), 'ok']);
+  const tools = it.gold ? ['weigh', 'purity', 'origin'] : ['cond', 'price', 'auth', 'origin'];
+  const low = c.patience <= 1;
+  const pat = Array.from({ length: c.maxPatience }, (_, i) => `<i class="${i < c.patience ? 'on' : ''}"></i>`).join('');
+  const isPawn = c.mode === 'pawn';
+  let deal;
+  if (c.status === 'talk') {
+    deal = `<div class="deal">
+      <div class="askline"><span class="k">${isPawn ? '손님 희망 대출액' : '손님 희망가'}</span><span class="v">${won(c.ask)}</span></div>
+      <div class="offer-row">
+        <button class="btn step" data-step="-10">−10</button><button class="btn step" data-step="-1">−1</button>
+        <input id="offer" type="number" inputmode="numeric" min="1" value="${c.offer}" aria-label="제시 금액(만원)">
+        <button class="btn step" data-step="1">+1</button><button class="btn step" data-step="10">+10</button>
+        <span class="hint">만원</span>
+      </div>
+      <div class="offer-row">
+        ${[0.4, 0.6, 0.8].map(p => `<button class="btn step" data-pct="${p}">희망가 ${p * 100}%</button>`).join('')}
+      </div>
+      <div class="actions">
+        <button class="btn primary" data-act="offer">${isPawn ? '이 금액 빌려주기' : '이 금액 제시'}</button>
+        <button class="btn" data-act="acceptAsk" ${c.ask > G.cash ? 'disabled' : ''}>희망가 수락</button>
+        <button class="btn danger" data-act="reject">돌려보내기</button>
+      </div>
+      <div class="hint">${isPawn ? `전당: 지금 빌려주고 ${TERM}일 뒤 손님이 원금+이자 ${INTEREST * 100}%를 갚으면 환매, 못 갚으면 물건이 내 것이 된다(유질).` : '매입: 사들인 물건은 금고에 들어가고, 오른쪽에서 되팔 수 있다.'}</div>
+    </div>`;
+  } else {
+    const res = c.status === 'deal' ? `거래 성립 · ${won(c.final)}` : c.status === 'left' ? '손님이 떠났다' : '돌려보냈다';
+    deal = `<div class="deal"><div class="askline"><span class="k">결과</span><span class="v">${res}</span></div>
+      <div class="actions"><button class="btn primary" data-act="next">${G.served >= G.queue ? '오늘 손님 끝' : '다음 손님 들이기'}</button></div></div>`;
+  }
+  const stamp = c.status === 'deal' ? `<div class="stamp-over">${isPawn ? '전당' : '매입'}</div>` : '';
+  const html = `<section class="counter">
+    <div class="qbar"><span>오늘 손님 <b>${G.served}/${G.queue}</b></span><span>감정력은 매일 아침 ${AP_MAX}으로 채워진다</span></div>
+    <div class="guest">
+      <div class="avatar" aria-hidden="true">${A.e}</div>
+      <div>
+        <div class="who"><strong>${c.name}</strong><span class="tag">${c.regular ? REG[c.regular].label : A.label}</span>${c.regular ? '<span class="chip y">단골</span>' : ''}
+          <span class="patience ${low ? 'low' : ''}" title="인내심">인내심 ${pat}</span></div>
+        <div class="bubble ${c.mood ? 'mood-' + c.mood : ''}">“${c.say}”</div>
+      </div>
+    </div>
+    <div class="slip ${c.fresh ? 'enter' : ''}">
+      <div class="slip-head"><span class="t">감 정 서</span><span class="mode">${isPawn ? '전당 요청' : '매입 요청'}</span></div>
+      <div class="item has-stage">${stageHTML(it)}<div><h2>${it.name}</h2><div class="claim">${claim}</div>
+      <div class="notes">${notes.length ? notes.map(([l, v, cls]) => `<div><span class="lbl">${l}</span><span class="${cls}">${v}</span></div>`).join('') : '<div class="empty">아직 감정하지 않았다. 아래 도구로 확인하자.</div>'}</div>
+      </div></div>
+      ${stamp}
+    </div>
+    ${c.status === 'talk' ? `<div class="tools">${tools.map(t => {
+      const T = TOOLS[t], used = t === 'origin' ? c.asked : c.rev[t] !== undefined;
+      return `<button class="btn" data-tool="${t}" ${used || G.ap < T.cost ? 'disabled' : ''}>${T.label}<span class="c">${T.cost ? '감정력 ' + T.cost : '무료'}</span></button>`;
+    }).join('')}</div>` : ''}
+    ${deal}
+  </section>`;
+  c.fresh = false;
+  return html;
+}
+
+function renderChoice(c) {
+  const S = STORY[c.story], r = G.reg[S.arc], sp = SPEAKERS[c.speaker], isReg = c.speaker in REG;
+  const talk = c.status === 'talk';
+  const opts = talk ? S.choices(r) : [];
+  const html = `<section class="counter">
+    <div class="qbar"><span>오늘 손님 <b>${G.served}/${G.queue}</b></span><span>사연 이벤트</span></div>
+    <div class="guest">
+      <div class="avatar" aria-hidden="true">${sp.e}</div>
+      <div>
+        <div class="who"><strong>${sp.name}</strong><span class="tag">${sp.label}</span>${isReg ? `<span class="chip y">단골</span><span class="hearts" title="호감도">${hearts(r.aff)}</span>` : ''}</div>
+        <div class="bubble ${c.mood ? 'mood-' + c.mood : ''}">“${c.say}”</div>
+      </div>
+    </div>
+    <div class="slip ${c.fresh ? 'enter' : ''}">
+      <div class="slip-head"><span class="t">사 연</span><span class="mode">${c.title}</span></div>
+      ${S.item ? `<div class="item has-stage">${stageHTML(S.item)}<div><h2>${S.item.name}</h2><div class="claim">${S.item.claim}</div></div></div>` : ''}
+      ${c.info ? `<div class="notes"><div><span class="lbl">${c.info}</span></div></div>` : ''}
+      ${talk ? `<div class="choices">${opts.map((o, i) => {
+        const sub = [o.cost ? '현금 -' + won(o.cost) : '', o.hint || ''].filter(Boolean).join(' · ');
+        return `<button class="choice" data-choice="${i}" ${o.cost && o.cost > G.cash ? 'disabled' : ''}><b>${o.label}</b>${sub ? `<span>${sub}</span>` : ''}</button>`;
+      }).join('')}</div>`
+      : `<div class="notes"><div><span class="lbl">나의 선택</span><span class="ok">${c.picked}</span></div></div>`}
+    </div>
+    ${talk ? '' : `<div class="deal"><div class="actions"><button class="btn primary" data-act="next">${G.served >= G.queue ? '오늘 손님 끝' : '다음 손님 들이기'}</button></div></div>`}
+  </section>`;
+  c.fresh = false;
+  return html;
+}
+
+function renderSide() {
+  const canSell = G.phase === 'day' || G.phase === 'closed';
+  const inv = G.inv.length ? G.inv.map(x => {
+    const notes = knownNotes(x, x.rev || {}).map(r => `${r[0]} ${r[1]}`).join(' · ');
+    let act;
+    if (x.gold) act = `<div class="offer-box"><span class="q">금은방 매입가 ${won(realOf(x))}<span class="hint"> (오늘 시세)</span></span><button class="btn mini" data-gold="${x.id}" ${canSell ? '' : 'disabled'}>금은방에 팔기</button></div>`;
+    else if (x.offer) act = `<div class="offer-box"><span class="q">${x.offerNote}: <b class="num">${won(x.offer)}</b></span><span><button class="btn mini primary" data-sell="${x.id}">판매</button> <button class="btn mini" data-hold="${x.id}">보류</button></span></div>`;
+    else act = `<div class="offer-box"><span class="hint">${x.offerDay === G.day ? '오늘은 더 이상 찾는 사람이 없다' : '진열하면 하루 한 번 구매 제안이 온다'}</span><button class="btn mini" data-buyer="${x.id}" ${x.offerDay === G.day || !canSell ? 'disabled' : ''}>진열하기</button></div>`;
+    return `<div class="inv-item"><div class="inv-top">${thumb(x)}<span class="n">${x.name}</span><span class="num">${won(x.cost)}</span></div>
+      <div class="inv-meta">${x.from}${notes ? ' · ' + notes : ' · 감정 기록 없음'}</div>${act}</div>`;
+  }).join('') : '<div class="empty-note">금고가 비어 있다. 손님에게서 물건을 사들이거나, 유질된 전당물이 여기로 온다.</div>';
+  const tickets = G.pawns.length ? G.pawns.map(p => `<div class="ticket"><span class="no">No.${p.no} 전당표</span>
+      <span class="ticket-row">${thumb(p.item, 'th sm')}<span>${p.item.name} · ${p.owner}</span></span>
+      <span class="d">대출 ${won(p.loan)} → 환매 ${won(p.loan * (1 + INTEREST))} · ${p.story ? '사연 진행 중' + (p.out ? ' · 손님이 잠시 빌려 감' : '') : '기한 D' + p.due}</span></div>`).join('')
+    : '<div class="empty-note">맡아둔 물건이 없다.</div>';
+  const met = Object.keys(REG).filter(k => G.reg[k].met);
+  const book = met.length ? met.map(k => `<div class="regular"><span class="e" aria-hidden="true">${REG[k].e}</span>
+      <div><div class="n">${REG[k].name} <span class="hearts" title="호감도">${hearts(G.reg[k].aff)}</span></div>
+      <div class="inv-meta">${G.reg[k].note || REG[k].label}</div></div></div>`).join('')
+    : '<div class="empty-note">아직 단골이 없다. 다시 찾아올 손님은 여기에 적힌다.</div>';
+  return `<aside class="side">
+    <div class="box"><h3>금고 <small>${G.inv.length}점 · 원가 ${won(G.inv.reduce((a, x) => a + x.cost, 0))}</small></h3><div class="inv">${inv}</div></div>
+    <div class="box"><h3>전당표 <small>${G.pawns.length}건</small></h3><div class="tickets">${tickets}</div></div>
+    <div class="box"><h3>단골 수첩 <small>${met.length}/${Object.keys(REG).length}명</small></h3><div class="book">${book}</div></div>
+    <div class="box"><h3>장부</h3><div class="log">${G.log.length ? G.log.map(l => `<div>${l}</div>`).join('') : '<div>아직 기록이 없다.</div>'}</div></div>
+  </aside>`;
+}
+
+function renderModal() {
+  if (G.phase === 'intro') {
+    return `<div class="overlay"><div class="modal"><div class="slip enter">
+      <div class="slip-head"><span class="t">개 업 안 내</span><span class="mode">D1 / D${DAYS}</span></div>
+      <h2>나는 전당포 사장이다</h2>
+      <p>삼촌에게 물려받은 골목 전당포. 금고엔 ${won(START_CASH)}, 월세는 7일마다 ${won(RENT)}.</p>
+      <p><b>${DAYS}일 뒤 현금 ${won(GOAL)}</b>을 만들면 가게를 지킨다.</p>
+      <ul>
+        <li><b>감정</b>: 하루 감정력 ${AP_MAX}. 상태, 시세, 진품 여부를 확인해 손님 말의 진위를 가린다.</li>
+        <li><b>흥정</b>: 너무 깎으면 인내심이 바닥나 떠난다. 모욕적인 금액은 두 배로 깎인다.</li>
+        <li><b>전당</b>: 빌려주고 ${TERM}일 뒤 이자 ${INTEREST * 100}%를 받거나, 못 갚으면 물건을 가진다.</li>
+        <li><b>장물</b>: 출처가 수상한 물건은 밤에 경찰이 압수해 갈 수 있다.</li>
+        <li><b>금</b>: 저울과 순도 검사로 금은방 매입가를 바로 계산할 수 있다. 시세는 매일 바뀐다.</li>
+        <li><b>단골</b>: 다시 찾아오는 손님들이 있다. 오늘의 선택이 그들의 다음 방문을 바꾼다.</li>
+      </ul>
+      <button class="btn primary" data-act="start">셔터 올리기</button>
+    </div></div></div>`;
+  }
+  if (G.phase === 'night') {
+    return `<div class="overlay"><div class="modal"><div class="slip enter">
+      <div class="slip-head"><span class="t">영 업 일 지</span><span class="mode">D${G.day} 마감</span></div>
+      <h2>${G.day}일차 밤</h2>
+      <div class="report">${G.report.map(r => `<div>${r}</div>`).join('')}</div>
+      <div class="row"><span>현금</span><span>${won(G.cash)}</span></div>
+      <div class="row"><span>평판</span><span>${G.rep}</span></div>
+      <div class="row"><span>다음 월세</span><span>D${Math.ceil((G.day + 1) / 7) * 7}</span></div>
+      <button class="btn primary" data-act="nextDay">${G.day + 1}일차 문 열기</button>
+    </div></div></div>`;
+  }
+  if (G.phase === 'end' || G.phase === 'bankrupt') {
+    const bank = G.phase === 'bankrupt';
+    const grade = bank ? 'F' : G.cash >= GOAL * 1.3 ? 'S' : G.cash >= GOAL ? 'A' : G.cash >= GOAL * 0.7 ? 'B' : 'C';
+    const title = bank ? '월세를 못 내 문을 닫았다' : grade === 'S' ? '골목의 금고왕' : grade === 'A' ? '가게를 지켜냈다' : grade === 'B' ? '겨우 버텼다' : '목표에 못 미쳤다';
+    const s = G.stats;
+    return `<div class="overlay"><div class="modal"><div class="slip enter">
+      <div class="slip-head"><span class="t">결 산 서</span><span class="mode">${bank ? `D${G.day} 폐업` : `D${DAYS} 결산`}</span></div>
+      <div class="grade">${grade}</div>
+      <h2>${title}</h2>
+      <div class="report">${G.report.map(r => `<div>${r}</div>`).join('')}</div>
+      <div class="row"><span>최종 현금 (목표 ${won(GOAL)})</span><span>${won(G.cash)}</span></div>
+      <div class="row"><span>남은 재고 원가</span><span>${won(G.inv.reduce((a, x) => a + x.cost, 0))}</span></div>
+      <div class="row"><span>매입 / 전당</span><span>${s.deals}건 / ${s.pawns}건</span></div>
+      <div class="row"><span>환매 / 유질</span><span>${s.redeemed}건 / ${s.forfeited}건</span></div>
+      <div class="row"><span>판매 / 압수</span><span>${s.sold}건 / ${s.seized}건</span></div>
+      <div class="row"><span>평판</span><span>${G.rep}</span></div>
+      <button class="btn primary" data-act="restart">처음부터 다시</button>
+    </div></div></div>`;
+  }
+  return '';
+}
+
+function render() {
+  V.want = null;
+  const ap = Array.from({ length: AP_MAX }, (_, i) => `<i class="${i < G.ap ? 'on' : ''}"></i>`).join('');
+  document.getElementById('app').innerHTML = `
+    <header class="sign">
+      <div class="brand"><span class="seal" aria-hidden="true">典當</span><div><h1>나는 전당포 사장이다</h1><small>골목 전당포 · 프로토타입 v0.3</small></div></div>
+      <div class="stats">
+        <div class="stat"><span class="k">영업일</span><span class="v">D${G.day}/${DAYS}</span></div>
+        <div class="stat"><span class="k">현금</span><span class="v">${won(G.cash)}</span></div>
+        <div class="stat"><span class="k">평판</span><span class="v">${G.rep}</span></div>
+        <div class="stat"><span class="k">금시세 24K 1돈</span><span class="v">${G.gold}만</span></div>
+        <div class="stat"><span class="k">감정력</span><span class="ap" aria-label="감정력 ${G.ap}">${ap}</span></div>
+      </div>
+    </header>
+    <div class="main">${renderCounter()}${renderSide()}</div>
+    ${renderModal()}`;
+  attachStage();
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  const d = b.dataset, c = G.cur;
+  if (d.tool) return useTool(d.tool);
+  if (d.choice) return choose(Number(d.choice));
+  if (d.step && c) { c.offer = Math.max(1, Math.round(c.offer) + Number(d.step)); return render(); }
+  if (d.pct && c) { c.offer = Math.max(1, Math.round(c.ask * Number(d.pct))); return render(); }
+  if (d.buyer) return askBuyer(Number(d.buyer));
+  if (d.sell) return sellItem(Number(d.sell), false);
+  if (d.gold) return sellItem(Number(d.gold), true);
+  if (d.hold) return holdItem(Number(d.hold));
+  switch (d.act) {
+    case 'start': return startDay();
+    case 'offer': return makeOffer();
+    case 'acceptAsk': return deal(c.ask);
+    case 'reject': return rejectGuest();
+    case 'next': return nextCustomer();
+    case 'endDay': return endDay();
+    case 'nextDay': return nextDay();
+    case 'restart': newGame(); return render();
+  }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'offer' && G.cur) G.cur.offer = Number(e.target.value) || 0;
+});
+document.addEventListener('keydown', e => {
+  if (e.target.id === 'offer' && e.key === 'Enter') makeOffer();
+});
+
+function boot(data) {
+  if (!V.r) initViewer();
+  if (data && data.G && data.G.reg) G = data.G; else newGame();
+  render();
+}
+window.claude?.hot?.snapshot?.(() => ({ G }));
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>
