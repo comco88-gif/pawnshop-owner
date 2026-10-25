@@ -46,7 +46,7 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid; gap: 16px;
 }
-button { font: inherit; cursor: pointer; }
+button { font: inherit; cursor: pointer; touch-action: manipulation; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
 
@@ -218,6 +218,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .chip.g { color: var(--good); } .chip.r { color: var(--bad); } .chip.y { color: var(--brass); }
 .pos { color: var(--good); } .neg { color: var(--bad); }
 
+/* 휴대폰: 손가락 기준 터치 영역(44px)과 좁은 화면 배치 */
+@media (pointer: coarse) {
+  .btn.mini, .btn.step, .focus-bar .btn, .offer-row input { min-height: 44px; }
+  .pin { width: 40px; height: 40px; margin: -20px 0 0 -20px; font-size: 18px; }
+}
+@media (max-width: 560px) {
+  .tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tools .btn { justify-content: center; }
+}
+
 /* 첫날 도움말 */
 .tip { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; border: 1px dashed var(--brass); border-radius: 3px; padding: 9px 12px; font-size: 14px; background: rgba(209,166,80,.07); }
 .tip b { color: var(--brass); }
@@ -229,7 +239,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .dex-row span { font-size: 13px; color: var(--ink-muted); }
 .dex-row.locked { opacity: .55; }
 .dex-imgs { display: flex; gap: 6px; }
-.dex-imgs figure { margin: 0; text-align: center; font-size: 11px; color: var(--ink-muted); }
+.dex-imgs figure { margin: 0; text-align: center; font-size: 12px; color: var(--ink-muted); }
 .dex-imgs img { display: block; width: 64px; height: 64px; object-fit: contain; background: #7c7c78; border-radius: 2px; }
 .dex-lock { width: 64px; height: 64px; display: grid; place-items: center; font-size: 26px; color: var(--ink-muted); border: 1px dashed var(--paper-line); border-radius: 2px; }
 
@@ -646,7 +656,7 @@ function genCustomer(spec = {}) {
 }
 
 function nextCustomer() {
-  if (G.served >= G.queue) { G.cur = null; G.phase = 'closed'; render(); return; }
+  if (G.served >= G.queue) { G.cur = null; G.phase = 'closed'; UI.scrollTo = 'counter'; render(); return; }
   const remaining = G.queue - G.served;
   G.served++;
   const special = G.storyQ.length + (G.brokerToday ? 1 : 0);
@@ -656,6 +666,7 @@ function nextCustomer() {
     else { G.brokerToday = false; G.cur = genCustomer(BROKER_SUPPLY()); }
   } else G.cur = genCustomer();
   G.cur.fresh = true;
+  UI.scrollTo = 'counter';
   render();
 }
 
@@ -691,7 +702,7 @@ function useTool(t) {
   if (t === 'weigh') c.rev.weigh = it.don;
   if (t === 'auth') c.rev.auth = it.fake ? (Math.random() < 0.9 ? '가품' : '정품') : (Math.random() < 0.95 ? '정품' : '가품');
   if (t === 'purity') c.rev.purity = it.fake ? (Math.random() < 0.95 ? '도금' : it.claimPurity) : (Math.random() < 0.95 ? it.purity : pick(Object.keys(PUR)));
-  if (t === 'loupe') c.rev.loupe = [];
+  if (t === 'loupe') { c.rev.loupe = []; UI.scrollTo = 'stage'; }
   if ((t === 'auth' || t === 'purity' || t === 'loupe') && it.fake && ARCH[c.arch].knowFake) {
     c.patience--; c.say = pick(LINES.fakeNervous); c.mood = 'bad';
     if (c.patience <= 0) return walkOut();
@@ -2051,6 +2062,7 @@ function inspectSpot(id) {
   const i = V.spots.findIndex(s => s.id === id); if (i < 0) return;
   V.focus = i; V.qT.copy(V.spots[i].q).invert();
   if (!c.rev.loupe.includes(id)) c.rev.loupe.push(id);
+  UI.scrollTo = 'stage';
   render();
 }
 
@@ -2104,7 +2116,7 @@ function stageOverlay(st) {
 // 가품을 잡아내거나 밤에 판명되면 그 단서가 기록된다. 판이 바뀌어도 남는다.
 const DEX = new Set();
 const DEX_ALL = Object.keys(SPOTS).flatMap(k => SPOTS[k].map(s => ({ k, id: s.id, label: s.label, real: s.real, name: ITEMS[k].name })));
-const UI = { dex: false };
+const UI = { dex: false, scrollTo: null };
 const dexImgs = {};
 function unlockDex(k, ids) {
   let n = 0;
@@ -2262,7 +2274,7 @@ function renderCounter() {
       const T = TOOLS[t], used = t === 'origin' ? c.asked : c.rev[t] !== undefined;
       return `<button class="btn" data-tool="${t}" ${used || G.ap < T.cost ? 'disabled' : ''}>${T.label}<span class="c">${T.cost ? '감정력 ' + T.cost : '무료'}</span></button>`;
     }).join('')}
-      <button class="btn danger" data-act="buyAP" ${(G.apBought || 0) >= AP_BUY_MAX || G.cash < apPrice() ? 'disabled' : ''} title="오늘 ${AP_BUY_MAX - (G.apBought || 0)}번 더 살 수 있다">감정력 +1 사기<span class="c">${(G.apBought || 0) >= AP_BUY_MAX ? '오늘 끝' : won(apPrice())}</span></button></div>` : ''}
+      <button class="btn danger" data-act="buyAP" ${(G.apBought || 0) >= AP_BUY_MAX || G.cash < apPrice() ? 'disabled' : ''} title="오늘 ${AP_BUY_MAX - (G.apBought || 0)}번 더 살 수 있다">감정력 +1 사기<span class="c">${(G.apBought || 0) >= AP_BUY_MAX ? '오늘 끝' : `${won(apPrice())} · ${AP_BUY_MAX - (G.apBought || 0)}회`}</span></button></div>` : ''}
     ${tipHTML(c)}
     ${deal}
   </section>`;
@@ -2433,6 +2445,16 @@ function render() {
     ${renderModal()}`;
   attachStage();
   if (G.phase !== 'intro') scheduleSave();
+  scrollFocus();
+}
+
+// 휴대폰처럼 한 줄로 쌓인 화면에서 지금 봐야 할 곳이 화면 밖이면 그리로 옮긴다 (보이면 그대로)
+function scrollFocus() {
+  const want = UI.scrollTo; UI.scrollTo = null;
+  const el = want && document.querySelector(want === 'stage' ? '.stage' : '.counter');
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  if (r.top < 0 || r.bottom > innerHeight) el.scrollIntoView({ block: want === 'stage' ? 'center' : 'start', behavior: V.reduced ? 'auto' : 'smooth' });
 }
 
 document.addEventListener('click', e => {
