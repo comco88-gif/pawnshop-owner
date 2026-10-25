@@ -218,6 +218,21 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .chip.g { color: var(--good); } .chip.r { color: var(--bad); } .chip.y { color: var(--brass); }
 .pos { color: var(--good); } .neg { color: var(--bad); }
 
+/* 첫날 도움말 */
+.tip { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; border: 1px dashed var(--brass); border-radius: 3px; padding: 9px 12px; font-size: 14px; background: rgba(209,166,80,.07); }
+.tip b { color: var(--brass); }
+/* 감정 도감 */
+.modal.wide { width: min(760px, 100%); }
+.dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 8px; margin: 10px 0; }
+.dex-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; border: 1px solid var(--paper-line); border-radius: 2px; padding: 8px; }
+.dex-row b { display: block; font-size: 14px; }
+.dex-row span { font-size: 13px; color: var(--ink-muted); }
+.dex-row.locked { opacity: .55; }
+.dex-imgs { display: flex; gap: 6px; }
+.dex-imgs figure { margin: 0; text-align: center; font-size: 11px; color: var(--ink-muted); }
+.dex-imgs img { display: block; width: 64px; height: 64px; object-fit: contain; background: #7c7c78; border-radius: 2px; }
+.dex-lock { width: 64px; height: 64px; display: grid; place-items: center; font-size: 26px; color: var(--ink-muted); border: 1px dashed var(--paper-line); border-radius: 2px; }
+
 /* 모달 */
 .overlay { position: fixed; inset: 0; background: rgba(10,7,5,.78); display: grid; place-items: center; z-index: 20;
   padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
@@ -383,6 +398,10 @@ const LINES = {
   leave: ['됐어요. 다른 데 갈게요.', '시간 낭비했네.'],
   stolen: ['어... 그게, 친구가 맡긴... 아니 제 거예요.', '그런 걸 왜 물어봐요? 살 거예요 말 거예요?', '주웠... 아니, 산 거예요.'],
   fakeNervous: ['아니, 뭘 그렇게 오래 봐요?', '정품이라니까요. 의심하시는 거예요?'],
+  // 제시가가 손님 마지노선에서 얼마나 떨어졌는지 말투로 드러난다
+  far: ['그건 너무하시네요.', '에이, 그 가격엔 못 드려요.', '농담이시죠?'],
+  near: ['음... 조금만 더 쓰시면 생각해볼게요.', '거의 다 왔는데요...', '아, 그 언저리면...'],
+  close: ['...고민되네요. 진짜 조금만 더요.', '하아, 그 정도면... 아니, 딱 조금만 더.', '거의 손이 갈 뻔했어요.'],
   reject: '아... 네. 알겠어요.',
   buyer: ['진열장 보고 들어온 손님이', '단골 수집가가', '중고 카페 보고 연락 온 손님이'],
 };
@@ -401,6 +420,9 @@ const ticketOf = k => G.pawns.find(p => p.story === k);
 const dropTicket = t => { G.pawns = G.pawns.filter(p => p !== t); };
 const invFromTicket = p => ({ ...p.item, id: G.uid++, cost: p.loan, from: p.owner + ' (유질)', offer: null, offerDay: 0 });
 const leicaItem = () => ({ key: 'leica', name: '라이카 M6 필름카메라', e: '📷', gold: false, base: 520, fake: false, stolen: false, cond: 'A', claimCond: 'A', real: 430, rev: { cond: 'A' } });
+// 첫날 첫 손님: 티가 확실한 가품 롤렉스로 루페 감정을 배운다
+const TUTOR = () => ({ arch: 'reseller', ik: 'rolex', item: { fake: true, cond: 'A', stolen: false }, mode: 'sell', askF: 1400 / 1300, tellsAll: true, patience: 6,
+  say: '사장님, 롤렉스 서브마리너예요. 정품에 상태 S급. 1,400만원에 깔끔하게 가시죠.' });
 const BROKER_SUPPLY = () => ({ arch: 'nervous', name: REG.broker.name, ik: pick(['rolex', 'omega', 'leica', 'macbook', 'diamond', 'gbrace']),
   item: { stolen: true, fake: false }, mode: 'sell', askF: 0.5, minF: 0.3, say: '오늘 물건이에요. 늘 하던 대로 반값.', regular: 'broker' });
 
@@ -539,14 +561,14 @@ function newGame() {
   G = { phase: 'intro', day: 1, cash: START_CASH, rep: 50, ap: AP_MAX, gold: 58, queue: 0, served: 0,
     cur: null, inv: [], pawns: [], log: [], ticket: 101, uid: 1, report: [],
     reg: Object.fromEntries(Object.keys(REG).map(k => [k, { met: false, aff: 0, flags: {}, note: '' }])),
-    storyQ: [], storyDone: {}, perks: {}, bonusQueue: 0, brokerToday: false,
+    storyQ: [], storyDone: {}, perks: {}, bonusQueue: 0, brokerToday: false, tutorial: true, today: [], recent: [], apBought: 0,
     stats: { deals: 0, pawns: 0, redeemed: 0, forfeited: 0, seized: 0, sold: 0, profit: 0 } };
 }
 
 function log(html) { G.log.unshift(`<span class="num">D${G.day}</span> ${html}`); G.log = G.log.slice(0, 60); }
 
 function startDay() {
-  G.phase = 'day'; G.ap = AP_MAX; G.served = 0; G.apBought = 0;
+  G.phase = 'day'; G.ap = AP_MAX; G.served = 0; G.apBought = 0; G.today = [];
   G.storyQ = Object.keys(STORY).filter(id => {
     const S = STORY[id];
     return S.day === G.day && !G.storyDone[id] && (!S.cond || S.cond(G.reg[S.arc]));
@@ -616,7 +638,8 @@ function genCustomer(spec = {}) {
   if (mode === 'sell') { ask = perceived * (spec.askF ?? R(1.05, 1.3)); min = perceived * (spec.minF ?? R(...A.desp)); }
   else { ask = perceived * (spec.askF ?? R(0.6, 0.8)); min = perceived * (spec.minF ?? R(...A.desp) * 0.6); }
   ask = Math.max(2, Math.round(ask)); min = Math.max(1, Math.min(ask - 1, Math.round(min)));
-  const p = RI(...A.patience);
+  if (spec.tellsAll && it.tells) for (const k in it.tells) it.tells[k] = true;
+  const p = spec.patience ?? RI(...A.patience);
   return { arch: ak, name: spec.name || pick(SURN) + pick(ak === 'grandma' ? GIVEN_OLD : GIVEN), item: it, mode, perceived, ask, min, patience: p, maxPatience: p,
     rev: {}, asked: false, status: 'talk', offer: Math.round(ask * 0.5), say: spec.say || pick(A[mode]), mood: '',
     story: spec.story || null, regular: spec.regular || null };
@@ -627,7 +650,8 @@ function nextCustomer() {
   const remaining = G.queue - G.served;
   G.served++;
   const special = G.storyQ.length + (G.brokerToday ? 1 : 0);
-  if (special && (remaining <= special || (G.served > 1 && Math.random() < 0.45))) {
+  if (G.day === 1 && G.served === 1 && G.tutorial) G.cur = genCustomer(TUTOR());
+  else if (special && (remaining <= special || (G.served > 1 && Math.random() < 0.45))) {
     if (G.storyQ.length) G.cur = spawnStory(G.storyQ.shift());
     else { G.brokerToday = false; G.cur = genCustomer(BROKER_SUPPLY()); }
   } else G.cur = genCustomer();
@@ -696,8 +720,9 @@ function makeOffer() {
       if (Math.random() < p) return deal(o);
     }
     c.ask = Math.max(c.min, Math.round(c.ask - (c.ask - o) * R(0.25, 0.45)));
-    c.say = fill(pick(c.mode === 'sell' ? LINES.sellCounter : LINES.pawnCounter), c.ask);
-    c.mood = '';
+    const tone = o >= c.min ? 'close' : o >= c.min * 0.85 ? 'near' : 'far';
+    c.say = pick(LINES[tone]) + ' ' + fill(pick(c.mode === 'sell' ? LINES.sellCounter : LINES.pawnCounter), c.ask);
+    c.mood = tone === 'far' ? '' : 'good';
   }
   if (c.patience <= 0) return walkOut();
   render();
@@ -707,6 +732,7 @@ function walkOut() {
   const c = G.cur;
   c.status = 'left'; c.say = pick(LINES.leave); c.mood = 'bad';
   if (c.insulted) { G.rep = clamp(G.rep - 1); }
+  remember(c, 'passed');
   storyFail(c);
   log(`<span class="chip r">결렬</span><b>${c.name}</b> 손님이 ${c.item.name}을(를) 들고 나갔다.`);
   render();
@@ -738,14 +764,23 @@ function deal(price) {
     G.rep = clamp(G.rep + 2);
   }
   c.status = 'deal'; c.say = A.accept; c.mood = 'good'; c.final = price;
+  remember(c, c.mode === 'sell' ? 'bought' : 'pawned', c.mode === 'sell' ? rec.id : rec.no);
   const S = c.story && STORY[c.story];
   if (S && S.onDeal) S.onDeal(G.reg[S.arc], price, rec, c);
   render();
 }
 
+// 밤 정산의 '감정 복기'를 위해 오늘 손에 쥐었거나, 살펴보고 돌려보낸 물건을 적어 둔다
+function remember(c, how, ref) {
+  const it = c.item;
+  if (how === 'passed' && !c.rev.loupe && !c.rev.auth && !c.rev.purity) return;
+  (G.today || (G.today = [])).push({ how, ref, key: it.key, name: it.name, fake: it.fake, gold: it.gold, tells: it.tells || {}, looked: c.rev.loupe ? [...c.rev.loupe] : null });
+}
+
 function rejectGuest() {
   const c = G.cur; if (c.status !== 'talk') return;
   c.status = 'rejected'; c.say = LINES.reject; c.mood = '';
+  remember(c, 'passed');
   storyFail(c);
   render();
 }
@@ -778,7 +813,32 @@ function sellItem(id, goldShop) {
 
 function holdItem(id) { const x = G.inv.find(v => v.id === id); if (x) { x.offer = null; render(); } }
 
+function reviewDay() {
+  const out = [], spotName = (k, ids) => ids.map(id => SPOTS[k].find(s => s.id === id).label).join(', ');
+  let fresh = 0;
+  for (const e of G.today || []) {
+    const tellIds = Object.keys(e.tells).filter(id => e.tells[id]);
+    if (e.fake) fresh += unlockDex(e.key, tellIds);
+    if (e.how === 'passed') {
+      out.push(e.fake ? `<span class="chip g">복기</span>돌려보낸 ${e.name}은(는) 역시 가품이었다.${tellIds.length ? ` 단서: ${spotName(e.key, tellIds)}` : ''}`
+        : `<span class="chip y">복기</span>돌려보낸 ${e.name}은(는) 정품이었다. 아까운 물건을 놓쳤다.`);
+      continue;
+    }
+    if (!e.fake) continue;
+    const seen = tellIds.filter(id => e.looked && e.looked.includes(id)), unseen = tellIds.filter(id => !seen.includes(id));
+    const clue = [seen.length ? `보고도 놓친 단서: ${spotName(e.key, seen)}` : '', unseen.length ? `확인 안 한 단서: ${spotName(e.key, unseen)}` : '',
+      !tellIds.length && e.gold ? '순도 검사로만 알 수 있었다' : ''].filter(Boolean).join(' · ');
+    out.push(`<span class="chip r">복기</span>${e.how === 'bought' ? '사들인' : '맡아둔'} ${e.name}은(는) 가품이었다.${clue ? ' ' + clue : ''}`);
+    const x = e.how === 'bought' ? G.inv.find(v => v.id === e.ref) : (G.pawns.find(t => t.no === e.ref) || {}).item;
+    if (x) x.exposed = true;
+  }
+  if (fresh) out.push(`<span class="chip g">도감</span>감정 도감에 새 단서 ${fresh}개가 기록됐다.`);
+  G.today = [];
+  return out.length ? ['<b>감정 복기</b>', ...out] : [];
+}
+
 function endDay() {
+  const review = reviewDay();
   const rep = [];
   G.pawns = G.pawns.filter(p => {
     if (p.story || p.due > G.day) return true;
@@ -800,7 +860,7 @@ function endDay() {
   if (G.day % 7 === 0) { G.cash -= RENT; rep.push(`<span class="chip r">월세</span>가게 월세를 냈다. <b class="neg">-${won(RENT)}</b>`); }
   const old = G.gold; G.gold = Math.round(G.gold * R(0.95, 1.06) * 10) / 10;
   rep.push(`<span class="chip y">금시세</span>내일 1돈 ${old} → <b>${G.gold}</b>만원`);
-  G.report = rep;
+  G.report = [...rep, ...review];
   G.phase = G.cash < 0 ? 'bankrupt' : G.day >= DAYS ? 'end' : 'night';
   render();
 }
@@ -2040,9 +2100,78 @@ function stageOverlay(st) {
   V.pins = [...st.querySelectorAll('.pin')];
 }
 
+/* ---------- 감정 도감 ---------- */
+// 가품을 잡아내거나 밤에 판명되면 그 단서가 기록된다. 판이 바뀌어도 남는다.
+const DEX = new Set();
+const DEX_ALL = Object.keys(SPOTS).flatMap(k => SPOTS[k].map(s => ({ k, id: s.id, label: s.label, real: s.real, name: ITEMS[k].name })));
+const UI = { dex: false };
+const dexImgs = {};
+function unlockDex(k, ids) {
+  let n = 0;
+  for (const id of ids) { const key = k + '.' + id; if (!DEX.has(key)) { DEX.add(key); n++; } }
+  if (n) storeSet('dex', { keys: [...DEX] });
+  return n;
+}
+function dexImg(k, id, tell) {
+  const key = [k, id, tell].join('|');
+  if (dexImgs[key]) return dexImgs[key];
+  const I = ITEMS[k], it = { key: k, gold: !!I.gold, fake: tell, purity: I.purity || '18K', claimPurity: I.purity || '18K', tells: {} };
+  return (dexImgs[key] = spotTex(it, id, tell).image.toDataURL('image/png'));
+}
+
+/* ---------- 진행 저장 ---------- */
+// 플레이어 본인만 읽는 db 공간(data/users/<id>/)에 저장한다. db를 못 쓰는 환경이면 브라우저 저장소로 대신한다.
+const STORE = { db: null, uid: null, save: null, timer: 0, writing: false, dirty: false };
+async function storeGet(name) {
+  if (STORE.db) {
+    try { const snap = await STORE.db.doc(`data/users/${STORE.uid}/${name}`).get(); return snap.exists ? snap.data() : null; } catch (e) { /* 아래 로컬로 */ }
+  }
+  try { return JSON.parse(localStorage.getItem('pawnshop.' + name) || 'null'); } catch (e) { return null; }
+}
+async function storeSet(name, obj) {
+  if (STORE.db) {
+    try { await STORE.db.doc(`data/users/${STORE.uid}/${name}`).set(obj); return; }
+    catch (e) { if (e && e.code === 'invalid_argument') STORE.db = null; } // 읽기 전용 열람자: 이번 방문은 로컬로
+  }
+  try { localStorage.setItem('pawnshop.' + name, JSON.stringify(obj)); } catch (e) { /* 저장 불가 환경 */ }
+}
+async function initStore() {
+  try {
+    const c = window.claude;
+    if (c && c.use) {
+      const [db, user] = await Promise.all([c.use('db'), c.use('user')]);
+      const uid = user ? await user.id() : null;
+      if (db && uid) { STORE.db = db; STORE.uid = uid; }
+    }
+  } catch (e) { /* 로컬로 */ }
+  const [save, dex] = await Promise.all([storeGet('save'), storeGet('dex')]);
+  (dex && dex.keys || []).forEach(k => DEX.add(k));
+  if (save && save.g) STORE.save = save;
+  if (G.phase === 'intro' || DEX.size) render();
+}
+function scheduleSave() {
+  clearTimeout(STORE.timer);
+  STORE.timer = setTimeout(flushSave, 1200);
+}
+async function flushSave() {
+  if (STORE.writing) { STORE.dirty = true; return; }
+  STORE.writing = true;
+  const over = G.phase === 'end' || G.phase === 'bankrupt';
+  await storeSet('save', over ? { g: null } : { at: Date.now(), day: G.day, cash: G.cash, g: JSON.stringify(G) });
+  STORE.writing = false;
+  if (STORE.dirty) { STORE.dirty = false; flushSave(); }
+}
+function continueGame() {
+  if (!STORE.save) return;
+  try { G = JSON.parse(STORE.save.g); } catch (e) { STORE.save = null; return render(); }
+  STORE.save = null; V.key = null;
+  render();
+}
+
 /* ---------- 렌더 ---------- */
 function knownNotes(it, rev) {
   const rows = [];
+  if (it.exposed) rows.push(['판명', '가품', 'warn']);
   if (rev.cond) rows.push(['상태', `${rev.cond}급`, rev.cond !== it.claimCond ? 'warn' : '']);
   if (rev.price) rows.push(['S급 정품 시세', `${Math.round(rev.price[0])}~${Math.round(rev.price[1])}만원`, '']);
   if (rev.auth) rows.push(['정밀 감정 (90%)', rev.auth, rev.auth === '가품' ? 'warn' : 'ok']);
@@ -2060,7 +2189,7 @@ function goldEst(it, rev) {
 function renderCounter() {
   if (G.phase === 'closed') {
     return `<section class="counter"><div class="qbar"><span>오늘 손님 <b>${G.served}/${G.queue}</b></span></div>
-      <div class="bubble">마지막 손님이 나갔다. 금고에 있는 물건을 정리하고 셔터를 내리자.</div>
+      <div class="bubble">마지막 손님이 나갔다. 금고에 있는 물건을 정리하고 셔터를 내리자.</div>${tipHTML(null)}
       <div class="actions"><button class="btn primary" data-act="endDay">영업 마감</button></div></section>`;
   }
   const c = G.cur; if (!c) return '';
@@ -2134,10 +2263,28 @@ function renderCounter() {
       return `<button class="btn" data-tool="${t}" ${used || G.ap < T.cost ? 'disabled' : ''}>${T.label}<span class="c">${T.cost ? '감정력 ' + T.cost : '무료'}</span></button>`;
     }).join('')}
       <button class="btn danger" data-act="buyAP" ${(G.apBought || 0) >= AP_BUY_MAX || G.cash < apPrice() ? 'disabled' : ''} title="오늘 ${AP_BUY_MAX - (G.apBought || 0)}번 더 살 수 있다">감정력 +1 사기<span class="c">${(G.apBought || 0) >= AP_BUY_MAX ? '오늘 끝' : won(apPrice())}</span></button></div>` : ''}
+    ${tipHTML(c)}
     ${deal}
   </section>`;
   c.fresh = false;
   return html;
+}
+
+// 첫날 도움말: 지금 할 일을 하나씩 알려준다
+function tipHTML(c) {
+  if (!G.tutorial || G.day > 1) return '';
+  let t;
+  if (G.phase === 'closed') t = '오늘 장사 끝. 금고의 물건은 <b>진열하기</b>로 구매 제안을 받거나, 금은 금은방에 바로 판다. 정리가 끝나면 <b>영업 마감</b>. 밤에는 오늘 감정을 복기해 준다.';
+  else if (!c || c.kind === 'choice') return '';
+  else if (c.status !== 'talk') t = '거래가 어땠는지는 밤 정산의 <b>감정 복기</b>에서 알려준다. 다음 손님을 들이자.';
+  else if (G.served === 1 && !c.rev.loupe) t = '① 손님 말만 믿지 말자. 물건은 드래그로 돌려볼 수 있다. <b>루페 감정</b>을 눌러 직접 들여다보자.';
+  else if (G.served === 1 && c.rev.loupe.length < SPOTS[c.item.key].length) t = '② 모델 위의 <b>＋</b>를 눌러 확대하고, 감정서의 <b>정품 체크 포인트</b>와 비교하자.';
+  else if (G.served === 1) t = '③ 기준과 다르면 가품이다. 가품이면 <b>돌려보내기</b>. 정품이면 금액을 정해 흥정한다. 낮게 부르면 손님 말투로 마지노선이 드러난다.';
+  else if (c.item.gold) t = '금은 <b>저울 측정</b>과 <b>순도 검사</b>로 금은방 매입가를 바로 알 수 있다. 각인에 GP가 있으면 도금이다.';
+  else if (c.mode === 'pawn') t = '전당: 지금 빌려주면 3일 뒤 이자 12%와 함께 돌아오거나, 못 갚으면 물건이 내 것이 된다.';
+  else if (G.ap <= 2) t = '감정력이 모자라면 <b>감정력 +1 사기</b>로 현금을 주고 더 살 수 있다. 살수록 비싸진다.';
+  else t = '<b>출처 묻기</b>는 무료다. 말을 더듬는 손님의 물건은 장물일 수 있고, 밤에 경찰이 압수해 간다.';
+  return `<div class="tip"><span>💡 ${t}</span><button class="btn mini" data-act="tipOff">도움말 끄기</button></div>`;
 }
 
 function renderChoice(c) {
@@ -2192,12 +2339,29 @@ function renderSide() {
   return `<aside class="side">
     <div class="box"><h3>금고 <small>${G.inv.length}점 · 원가 ${won(G.inv.reduce((a, x) => a + x.cost, 0))}</small></h3><div class="inv">${inv}</div></div>
     <div class="box"><h3>전당표 <small>${G.pawns.length}건</small></h3><div class="tickets">${tickets}</div></div>
+    <div class="box"><h3>감정 도감 <small>${DEX.size}/${DEX_ALL.length}곳</small></h3>
+      <div class="offer-box"><span class="hint">가품을 잡아내거나 밤에 판명되면 단서가 기록된다. 판이 바뀌어도 남는다.</span><button class="btn mini" data-act="dex">도감 펼치기</button></div></div>
     <div class="box"><h3>단골 수첩 <small>${met.length}/${Object.keys(REG).length}명</small></h3><div class="book">${book}</div></div>
     <div class="box"><h3>장부</h3><div class="log">${G.log.length ? G.log.map(l => `<div>${l}</div>`).join('') : '<div>아직 기록이 없다.</div>'}</div></div>
   </aside>`;
 }
 
+function renderDex() {
+  const rows = DEX_ALL.map(d => {
+    const open = DEX.has(d.k + '.' + d.id);
+    const imgs = open && V.ok ? `<figure><img src="${dexImg(d.k, d.id, false)}" alt=""><figcaption>정품</figcaption></figure><figure><img src="${dexImg(d.k, d.id, true)}" alt=""><figcaption>가품</figcaption></figure>`
+      : `<div class="dex-lock">${open ? '✓' : '?'}</div>`;
+    return `<div class="dex-row ${open ? '' : 'locked'}"><div class="dex-imgs">${imgs}</div><div><b>${d.name} · ${d.label}</b><span>${open ? d.real : '아직 잡아내지 못한 단서'}</span></div></div>`;
+  }).join('');
+  return `<div class="overlay" data-act="dexClose"><div class="modal wide" data-stop><div class="slip">
+    <div class="slip-head"><span class="t">감 정 도 감</span><span class="mode">${DEX.size} / ${DEX_ALL.length}</span></div>
+    <div class="dex">${rows}</div>
+    <button class="btn primary" data-act="dexClose">닫기</button>
+  </div></div></div>`;
+}
+
 function renderModal() {
+  if (UI.dex) return renderDex();
   if (G.phase === 'intro') {
     return `<div class="overlay"><div class="modal"><div class="slip enter">
       <div class="slip-head"><span class="t">개 업 안 내</span><span class="mode">D1 / D${DAYS}</span></div>
@@ -2212,8 +2376,10 @@ function renderModal() {
         <li><b>장물</b>: 출처가 수상한 물건은 밤에 경찰이 압수해 갈 수 있다.</li>
         <li><b>금</b>: 저울과 순도 검사로 금은방 매입가를 바로 계산할 수 있다. 시세는 매일 바뀐다.</li>
         <li><b>단골</b>: 다시 찾아오는 손님들이 있다. 오늘의 선택이 그들의 다음 방문을 바꾼다.</li>
+        <li><b>복기와 도감</b>: 밤마다 오늘 감정이 맞았는지 알려주고, 잡아낸 가품 단서는 도감에 모인다. 진행은 자동 저장된다.</li>
       </ul>
-      <button class="btn primary" data-act="start">셔터 올리기</button>
+      ${STORE.save ? `<button class="btn primary" data-act="continue">이어하기 · D${STORE.save.day} · 현금 ${won(STORE.save.cash)}</button> <button class="btn" data-act="start">새로 시작</button>`
+        : '<button class="btn primary" data-act="start">셔터 올리기</button>'}
     </div></div></div>`;
   }
   if (G.phase === 'night') {
@@ -2254,7 +2420,7 @@ function render() {
   const ap = Array.from({ length: Math.max(AP_MAX, G.ap) }, (_, i) => `<i class="${i < G.ap ? 'on' : ''}"></i>`).join('');
   document.getElementById('app').innerHTML = `
     <header class="sign">
-      <div class="brand"><span class="seal" aria-hidden="true">典當</span><div><h1>나는 전당포 사장이다</h1><small>골목 전당포 · 프로토타입 v0.5</small></div></div>
+      <div class="brand"><span class="seal" aria-hidden="true">典當</span><div><h1>나는 전당포 사장이다</h1><small>골목 전당포 · 프로토타입 v0.6</small></div></div>
       <div class="stats">
         <div class="stat"><span class="k">영업일</span><span class="v">D${G.day}/${DAYS}</span></div>
         <div class="stat"><span class="k">현금</span><span class="v">${won(G.cash)}</span></div>
@@ -2266,10 +2432,11 @@ function render() {
     <div class="main">${renderCounter()}${renderSide()}</div>
     ${renderModal()}`;
   attachStage();
+  if (G.phase !== 'intro') scheduleSave();
 }
 
 document.addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  const b = e.target.closest('button') || (e.target.matches('.overlay[data-act]') ? e.target : null); if (!b || b.disabled) return;
   const d = b.dataset, c = G.cur;
   if (d.tool) return useTool(d.tool);
   if (d.choice) return choose(Number(d.choice));
@@ -2287,16 +2454,21 @@ document.addEventListener('click', e => {
     case 'reject': return rejectGuest();
     case 'next': return nextCustomer();
     case 'buyAP': return buyAP();
+    case 'tipOff': G.tutorial = false; return render();
+    case 'dex': UI.dex = true; return render();
+    case 'dexClose': UI.dex = false; return render();
+    case 'continue': return continueGame();
     case 'unfocus': unfocus(); return render();
     case 'endDay': return endDay();
     case 'nextDay': return nextDay();
-    case 'restart': newGame(); return render();
+    case 'restart': newGame(); STORE.save = null; return render();
   }
 });
 document.addEventListener('input', e => {
   if (e.target.id === 'offer' && G.cur) G.cur.offer = Number(e.target.value) || 0;
 });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && UI.dex) { UI.dex = false; render(); }
   if (e.target.id === 'offer' && e.key === 'Enter') makeOffer();
 });
 
@@ -2304,6 +2476,7 @@ function boot(data) {
   if (!V.r) initViewer();
   if (data && data.G && data.G.reg) G = data.G; else newGame();
   render();
+  initStore();
 }
 window.claude?.hot?.snapshot?.(() => ({ G }));
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
