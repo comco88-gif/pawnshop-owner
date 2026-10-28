@@ -228,6 +228,22 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
   .tools .btn { justify-content: center; }
 }
 
+/* 하단 바로가기 탭: 한 줄 배치(860px 이하)에서만 */
+.tabs { display: none; }
+@media (max-width: 860px) {
+  .tabs {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    background: rgba(23,18,14,.96); border-top: 1px solid var(--brass-dim);
+    padding: 4px max(6px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left, 0px));
+  }
+  #app { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  .counter, .side .box { scroll-margin-top: 10px; }
+}
+.tab { min-height: 48px; background: transparent; border: 0; color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 2px; }
+.tab:active { color: var(--brass); }
+.tab b { font-family: var(--f-mono); font-size: 12px; min-width: 18px; padding: 1px 5px; border-radius: 9px; background: var(--line); color: var(--fg); }
+.tab b.hot { background: var(--brass); color: var(--ink); }
+
 /* 첫날 도움말 */
 .tip { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; border: 1px dashed var(--brass); border-radius: 3px; padding: 9px 12px; font-size: 14px; background: rgba(209,166,80,.07); }
 .tip b { color: var(--brass); }
@@ -2349,12 +2365,12 @@ function renderSide() {
       <div class="inv-meta">${G.reg[k].note || REG[k].label}</div></div></div>`).join('')
     : '<div class="empty-note">아직 단골이 없다. 다시 찾아올 손님은 여기에 적힌다.</div>';
   return `<aside class="side">
-    <div class="box"><h3>금고 <small>${G.inv.length}점 · 원가 ${won(G.inv.reduce((a, x) => a + x.cost, 0))}</small></h3><div class="inv">${inv}</div></div>
-    <div class="box"><h3>전당표 <small>${G.pawns.length}건</small></h3><div class="tickets">${tickets}</div></div>
+    <div class="box" id="sec-inv"><h3>금고 <small>${G.inv.length}점 · 원가 ${won(G.inv.reduce((a, x) => a + x.cost, 0))}</small></h3><div class="inv">${inv}</div></div>
+    <div class="box" id="sec-pawn"><h3>전당표 <small>${G.pawns.length}건</small></h3><div class="tickets">${tickets}</div></div>
     <div class="box"><h3>감정 도감 <small>${DEX.size}/${DEX_ALL.length}곳</small></h3>
       <div class="offer-box"><span class="hint">가품을 잡아내거나 밤에 판명되면 단서가 기록된다. 판이 바뀌어도 남는다.</span><button class="btn mini" data-act="dex">도감 펼치기</button></div></div>
-    <div class="box"><h3>단골 수첩 <small>${met.length}/${Object.keys(REG).length}명</small></h3><div class="book">${book}</div></div>
-    <div class="box"><h3>장부</h3><div class="log">${G.log.length ? G.log.map(l => `<div>${l}</div>`).join('') : '<div>아직 기록이 없다.</div>'}</div></div>
+    <div class="box" id="sec-book"><h3>단골 수첩 <small>${met.length}/${Object.keys(REG).length}명</small></h3><div class="book">${book}</div></div>
+    <div class="box" id="sec-log"><h3>장부</h3><div class="log">${G.log.length ? G.log.map(l => `<div>${l}</div>`).join('') : '<div>아직 기록이 없다.</div>'}</div></div>
   </aside>`;
 }
 
@@ -2370,6 +2386,15 @@ function renderDex() {
     <div class="dex">${rows}</div>
     <button class="btn primary" data-act="dexClose">닫기</button>
   </div></div></div>`;
+}
+
+// 휴대폰 하단 바로가기: 카운터와 금고가 한 줄로 쌓이는 화면에서만 보인다
+function renderTabs() {
+  const offers = G.inv.filter(x => x.offer).length;
+  const tab = (to, label, n, hot) => `<button class="tab" data-jump="${to}">${label}${n ? `<b class="${hot ? 'hot' : ''}">${n}</b>` : ''}</button>`;
+  return `<nav class="tabs" aria-label="바로가기">
+    ${tab('counter', '카운터', 0)}${tab('sec-inv', '금고', G.inv.length, offers)}${tab('sec-pawn', '전당표', G.pawns.length)}${tab('sec-book', '단골', 0)}${tab('sec-log', '장부', 0)}
+  </nav>`;
 }
 
 function renderModal() {
@@ -2442,6 +2467,7 @@ function render() {
       </div>
     </header>
     <div class="main">${renderCounter()}${renderSide()}</div>
+    ${G.phase === 'intro' ? '' : renderTabs()}
     ${renderModal()}`;
   attachStage();
   if (G.phase !== 'intro') scheduleSave();
@@ -2463,6 +2489,7 @@ document.addEventListener('click', e => {
   if (d.tool) return useTool(d.tool);
   if (d.choice) return choose(Number(d.choice));
   if (d.spot) return inspectSpot(d.spot);
+  if (d.jump) { const el = d.jump === 'counter' ? document.querySelector('.counter') : document.getElementById(d.jump); if (el) el.scrollIntoView({ block: 'start', behavior: V.reduced ? 'auto' : 'smooth' }); return; }
   if (d.step && c) { c.offer = Math.max(1, Math.round(c.offer) + Number(d.step)); return render(); }
   if (d.pct && c) { c.offer = Math.max(1, Math.round(c.ask * Number(d.pct))); return render(); }
   if (d.buyer) return askBuyer(Number(d.buyer));
