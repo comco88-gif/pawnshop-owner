@@ -244,6 +244,18 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .tab b { font-family: var(--f-mono); font-size: 12px; min-width: 18px; padding: 1px 5px; border-radius: 9px; background: var(--line); color: var(--fg); }
 .tab b.hot { background: var(--brass); color: var(--ink); }
 
+/* 밤 가게 정비 */
+.shop-h { font-family: var(--f-display); font-size: 18px; margin: 16px 0 6px; }
+.shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 6px; }
+.up { display: grid; gap: 2px; border: 1px solid var(--paper-line); border-radius: 2px; padding: 8px 10px; }
+.up b { font-size: 14px; } .up span { font-size: 13px; color: var(--ink-muted); }
+.up em { font-style: normal; font-size: 13px; color: #4e7a37; font-weight: 700; }
+.up .btn { justify-self: start; color: var(--ink); border-color: var(--ink-muted); margin-top: 4px; }
+.up.owned { background: rgba(78,122,55,.08); }
+/* UV 램프 반응 */
+.stage.uv-hit::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 52%, rgba(170,90,255,.38), rgba(120,60,255,.08) 45%, transparent 70%); mix-blend-mode: screen; }
+.uv-tag { color: #d6a8ff; } .uv-none { color: var(--muted); font-size: 12px; }
+
 /* 첫날 도움말 */
 .tip { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; border: 1px dashed var(--brass); border-radius: 3px; padding: 9px 12px; font-size: 14px; background: rgba(209,166,80,.07); }
 .tip b { color: var(--brass); }
@@ -438,7 +450,7 @@ const REG = {
   broker:  { name: '정태식', e: '😰', label: '싼 물건 들고 오는 남자' },
   student: { name: '윤서연', e: '🧑‍🎓', label: '사진과 졸업반' },
 };
-const SPEAKERS = { ...REG, detective: { name: '강 형사', e: '🕵️', label: '관할서 강력팀' } };
+const SPEAKERS = { ...REG, detective: { name: '강 형사', e: '🕵️', label: '관할서 강력팀' }, buyer: { name: '화난 구매자', e: '😠', label: '우리 가게에서 물건을 산 손님' } };
 
 const aff = (r, n) => { r.aff = Math.max(-3, Math.min(5, r.aff + n)); };
 const repUp = n => { G.rep = clamp(G.rep + n); };
@@ -454,6 +466,17 @@ const BROKER_SUPPLY = () => ({ arch: 'nervous', name: REG.broker.name, ik: pick(
 
 // type 'deal'은 일반 흥정, 나머지는 선택지 이벤트. day에 cond를 만족하면 그날 손님 줄에 끼어든다.
 const STORY = {
+  refund: { title: '환불 요구',
+    choices: (r, c) => { const b = c.data, half = Math.round(b.price / 2); return [
+      { label: '전액 환불한다', cost: b.price, hint: '평판을 지킨다', run() { G.cash -= b.price; repUp(2); return ['...다음부턴 제대로 확인하고 파세요.', '']; } },
+      { label: '반만 돌려준다', cost: half, hint: '절반은 받아들인다', run() {
+        G.cash -= half;
+        if (Math.random() < 0.55) { repUp(-2); return ['...이걸로 끝내죠. 두 번 다신 안 와요.', 'bad']; }
+        return [`장난해요? 신고할 거예요. ${reported(150, 8)}`, 'bad']; } },
+      { label: '모르는 일이라고 잡아뗀다', hint: '반반의 도박', run() {
+        if (Math.random() < (b.knew ? 0.3 : 0.5)) { repUp(-5); return ['두고 봐요. 동네에 다 소문낼 거니까.', 'bad']; }
+        return [`경찰서에서 봬요. ${reported(Math.round(b.price * 0.6) + 100, 10)}`, 'bad']; } },
+    ]; } },
   g1: { arc: 'grandma', day: 2, type: 'deal',
     spec: { arch: 'grandma', ik: 'gring', item: { don: 3, purity: '18K', fake: false, stolen: false }, mode: 'pawn', askF: 0.8, minF: 0.4,
       say: '이 쌍가락지, 영감이 장가올 때 해준 거야. 손주 입학금이 모자라서... 꼭 찾으러 올게.' },
@@ -557,6 +580,13 @@ const STORY = {
     ] },
 };
 
+// 가품을 팔고 난 뒤의 후폭풍. 날짜가 아니라 판매가 조건이라 STORY 큐에 안 들어가고 G.backlash로 온다.
+function refundEvent(b) {
+  return { kind: 'choice', story: 'refund', speaker: 'buyer', title: '환불 요구', data: b, status: 'talk', mood: 'bad',
+    say: `여기서 산 ${b.name}, 감정 맡겼더니 가품이래요! ${won(b.price)} 돌려주세요.`, info: `판매가 ${won(b.price)}${b.knew ? ' · 가품인 줄 알고 판 물건' : ''}` };
+}
+function reported(fine, rp) { G.cash -= fine; repUp(-rp); return `(손님이 신고했다. 벌금 ${won(fine)}, 평판 -${rp})`; }
+
 function spawnStory(id) {
   const S = STORY[id], r = G.reg[S.arc];
   G.storyDone[id] = true; r.met = true;
@@ -571,7 +601,7 @@ function storyFail(c) {
 
 function choose(i) {
   const c = G.cur; if (!c || c.kind !== 'choice' || c.status !== 'talk') return;
-  const S = STORY[c.story], r = G.reg[S.arc], ch = S.choices(r)[i];
+  const S = STORY[c.story], r = G.reg[S.arc], ch = S.choices(r, c)[i];
   if (!ch || (ch.cost && ch.cost > G.cash)) return;
   const [say, mood] = ch.run(r);
   c.say = say; c.mood = mood; c.status = 'done'; c.picked = ch.label;
@@ -588,6 +618,7 @@ function newGame() {
     cur: null, inv: [], pawns: [], log: [], ticket: 101, uid: 1, report: [],
     reg: Object.fromEntries(Object.keys(REG).map(k => [k, { met: false, aff: 0, flags: {}, note: '' }])),
     storyQ: [], storyDone: {}, perks: {}, bonusQueue: 0, brokerToday: false, tutorial: true, today: [], recent: [], apBought: 0,
+    up: {}, debt: 0, backlash: [], eventQ: [],
     stats: { deals: 0, pawns: 0, redeemed: 0, forfeited: 0, seized: 0, sold: 0, profit: 0 } };
 }
 
@@ -600,7 +631,9 @@ function startDay() {
     return S.day === G.day && !G.storyDone[id] && (!S.cond || S.cond(G.reg[S.arc]));
   });
   G.brokerToday = !!G.reg.broker.flags.partner;
-  G.queue = Math.min(9, 4 + Math.floor(G.rep / 20)) + G.bonusQueue + G.storyQ.length + (G.brokerToday ? 1 : 0);
+  G.eventQ = (G.backlash || []).filter(b => b.due <= G.day);
+  G.backlash = (G.backlash || []).filter(b => b.due > G.day);
+  G.queue = Math.min(9, 4 + Math.floor(G.rep / 20)) + G.bonusQueue + G.storyQ.length + G.eventQ.length + (G.brokerToday ? 1 : 0);
   nextCustomer();
 }
 
@@ -639,11 +672,18 @@ function genCustomer(spec = {}) {
   const fakeP = I.nofake ? 0 : A.fake + (I.fakeBoost || 0);
   const it = { key: ik, name: I.name, e: I.e, gold: !!I.gold, base: I.base,
     fake: o.fake ?? Math.random() < fakeP, stolen: o.stolen ?? Math.random() < A.stolen };
+  it.knew = it.fake && !!A.knowFake; // 알고 속였는지: 사기 신고가 통하는지 가른다
   if (SPOTS[ik]) {
     // 가품은 부위마다 티가 날 수도, 잘 베꼈을 수도 있다. 금 외에는 최소 한 곳은 티가 난다.
     const ids = SPOTS[ik].map(s => s.id);
     it.tells = Object.fromEntries(ids.map(id => [id, it.fake && Math.random() < (I.gold ? 0.5 : 0.75)]));
     if (it.fake && !I.gold && !ids.some(id => it.tells[id])) it.tells[pick(ids)] = true;
+    // 정교한 가품(S급 짝퉁): 티가 딱 한 곳만 난다. 가품 장사꾼일수록, 날이 갈수록 많아진다.
+    const premP = (ak === 'reseller' ? 0.45 : ak === 'lady' ? 0.55 : 0.12) + (G.day - 1) * 0.02;
+    if (it.fake && !I.gold && ids.length > 1 && Math.random() < premP) {
+      it.premium = true; const one = pick(ids);
+      ids.forEach(id => { it.tells[id] = id === one; });
+    }
   }
   it.lock = it.stolen && ['iphone', 'macbook', 'ipad'].includes(ik) && Math.random() < 0.6;
   let perceived;
@@ -657,7 +697,7 @@ function genCustomer(spec = {}) {
     it.cond = o.cond ?? pickCond();
     const better = CONDS[Math.max(0, CONDS.indexOf(it.cond) - 1)];
     it.claimCond = A.honest ? (Math.random() < 0.7 ? it.cond : better) : 'S';
-    it.real = it.fake ? I.base * R(0.02, 0.05) : I.base * COND[it.cond] * R(0.9, 1.1);
+    it.real = it.fake ? I.base * (it.premium ? R(0.06, 0.1) : R(0.02, 0.05)) : I.base * COND[it.cond] * R(0.9, 1.1);
     perceived = I.base * COND[it.claimCond];
   }
   let ask, min;
@@ -665,7 +705,7 @@ function genCustomer(spec = {}) {
   else { ask = perceived * (spec.askF ?? R(0.6, 0.8)); min = perceived * (spec.minF ?? R(...A.desp) * 0.6); }
   ask = Math.max(2, Math.round(ask)); min = Math.max(1, Math.min(ask - 1, Math.round(min)));
   if (spec.tellsAll && it.tells) for (const k in it.tells) it.tells[k] = true;
-  const p = spec.patience ?? RI(...A.patience);
+  const p = (spec.patience ?? RI(...A.patience)) + (up('coffee') ? 1 : 0);
   return { arch: ak, name: spec.name || pick(SURN) + pick(ak === 'grandma' ? GIVEN_OLD : GIVEN), item: it, mode, perceived, ask, min, patience: p, maxPatience: p,
     rev: {}, asked: false, status: 'talk', offer: Math.round(ask * 0.5), say: spec.say || pick(A[mode]), mood: '',
     story: spec.story || null, regular: spec.regular || null };
@@ -675,10 +715,11 @@ function nextCustomer() {
   if (G.served >= G.queue) { G.cur = null; G.phase = 'closed'; UI.scrollTo = 'counter'; render(); return; }
   const remaining = G.queue - G.served;
   G.served++;
-  const special = G.storyQ.length + (G.brokerToday ? 1 : 0);
+  const special = G.storyQ.length + (G.eventQ || []).length + (G.brokerToday ? 1 : 0);
   if (G.day === 1 && G.served === 1 && G.tutorial) G.cur = genCustomer(TUTOR());
   else if (special && (remaining <= special || (G.served > 1 && Math.random() < 0.45))) {
     if (G.storyQ.length) G.cur = spawnStory(G.storyQ.shift());
+    else if ((G.eventQ || []).length) G.cur = refundEvent(G.eventQ.shift());
     else { G.brokerToday = false; G.cur = genCustomer(BROKER_SUPPLY()); }
   } else G.cur = genCustomer();
   G.cur.fresh = true;
@@ -696,6 +737,59 @@ const TOOLS = {
   origin: { label: '출처 묻기', cost: 0 },
 };
 
+/* ---------- 가게 업그레이드 ---------- */
+const UPGRADES = {
+  uv:     { name: 'UV 감정 램프', cost: 500, desc: '루페로 확대한 부위가 가품이면 형광으로 반응한다' },
+  insure: { name: '가품 보증보험', cost: 400, desc: '밤에 가품으로 판명되면 매입가의 40%를 보상' },
+  shelf:  { name: '넓은 진열장', cost: 300, desc: '물건마다 하루 구매 제안을 2번 받는다' },
+  cctv:   { name: '방범 CCTV', cost: 300, desc: '장물 압수 확률 절반, 출처 묻기와 사기 신고가 더 정확해진다' },
+  tester: { name: '금 테스터기', cost: 250, desc: '순도 검사가 감정력 1, 100% 정확' },
+  coffee: { name: '커피 머신', cost: 150, desc: '모든 손님 인내심 +1' },
+};
+const up = k => !!(G.up && G.up[k]);
+const toolCost = t => t === 'purity' && up('tester') ? 1 : TOOLS[t].cost;
+function buyUpgrade(k) {
+  const U = UPGRADES[k];
+  if (!U || up(k) || G.cash < U.cost || G.phase !== 'night') return;
+  G.cash -= U.cost; G.up = { ...(G.up || {}), [k]: true };
+  log(`<span class="chip y">정비</span><b>${U.name}</b> 설치 <span class="neg">-${won(U.cost)}</span>`);
+  render();
+}
+
+/* ---------- 손실 회복: 급전, 사기 신고, 짝퉁 업자 ---------- */
+// 은행 급전은 500만원씩, 빚(이자 포함) 1,650만원까지. 마지막 날 자동 상환.
+const LOAN = 500, LOAN_RATE = 0.1, DEBT_CAP = 1650, RESCUE_CAP = 2500;
+function borrow() {
+  if ((G.debt || 0) + LOAN * (1 + LOAN_RATE) > DEBT_CAP || G.phase === 'intro' || G.phase === 'end' || G.phase === 'bankrupt') return;
+  G.cash += LOAN; G.debt = (G.debt || 0) + LOAN * (1 + LOAN_RATE);
+  log(`<span class="chip y">급전</span>은행에서 ${won(LOAN)}을 빌렸다 (갚을 돈 +${won(LOAN * (1 + LOAN_RATE))})`);
+  render();
+}
+function repay() {
+  const amt = Math.min(G.debt || 0, Math.max(0, G.cash));
+  if (amt <= 0) return;
+  G.cash -= amt; G.debt -= amt;
+  log(`<span class="chip g">상환</span>빚 ${won(amt)}을 갚았다${G.debt ? ` (남은 빚 ${won(G.debt)})` : ''}`);
+  render();
+}
+function reportFraud(id) {
+  const x = G.inv.find(v => v.id === id); if (!x || !x.exposed || x.reported) return;
+  x.reported = true;
+  if (!x.knew) { log(`<span class="chip y">신고</span>${x.name}: 판 사람도 모르고 가져온 가품이었다. 사기로 볼 수 없다.`); return render(); }
+  if (Math.random() < (up('cctv') ? 0.75 : 0.55)) {
+    const back = Math.round(x.cost * 0.7); G.cash += back; G.inv = G.inv.filter(v => v !== x); G.rep = clamp(G.rep + 3);
+    log(`<span class="chip g">검거</span>${x.name}을(를) 판 사기범이 잡혔다. 피해금 <b class="pos">+${won(back)}</b>, 물건은 증거물로 압수`);
+  } else log(`<span class="chip r">신고</span>${x.name}: 수사했지만 범인을 찾지 못했다.`);
+  render();
+}
+const dumpPrice = x => Math.max(1, Math.round(x.base * (x.premium ? 0.2 : 0.12)));
+function dumpFake(id) {
+  const x = G.inv.find(v => v.id === id); if (!x || !x.exposed || x.gold) return;
+  const price = dumpPrice(x); G.cash += price; G.inv = G.inv.filter(v => v !== x); G.stats.sold++; G.stats.profit += price - x.cost;
+  log(`<span class="chip y">처분</span>${x.name}을(를) 짝퉁 업자에게 넘겼다 <b>${won(price)}</b> <span class="neg">(${won(price - x.cost)})</span>`);
+  render();
+}
+
 // 감정력은 현금으로 살 수 있다. 하루 4번까지, 살수록 비싸진다.
 const AP_BUY_MAX = 4;
 const apPrice = () => 30 + 20 * (G.apBought || 0);
@@ -708,16 +802,17 @@ function buyAP() {
 }
 
 function useTool(t) {
-  const c = G.cur, it = c.item, T = TOOLS[t];
-  if (c.status !== 'talk' || G.ap < T.cost) return;
+  const c = G.cur, it = c.item, cost = toolCost(t);
+  if (c.status !== 'talk' || G.ap < cost) return;
   if (t === 'origin' ? c.asked : c.rev[t] !== undefined) return;
-  G.ap -= T.cost;
+  G.ap -= cost;
   c.mood = '';
   if (t === 'cond') c.rev.cond = it.cond;
   if (t === 'price') c.rev.price = [it.base * 0.9, it.base * 1.1];
   if (t === 'weigh') c.rev.weigh = it.don;
   if (t === 'auth') c.rev.auth = it.fake ? (Math.random() < 0.9 ? '가품' : '정품') : (Math.random() < 0.95 ? '정품' : '가품');
-  if (t === 'purity') c.rev.purity = it.fake ? (Math.random() < 0.95 ? '도금' : it.claimPurity) : (Math.random() < 0.95 ? it.purity : pick(Object.keys(PUR)));
+  const acc = up('tester') ? 1 : 0.95;
+  if (t === 'purity') c.rev.purity = it.fake ? (Math.random() < acc ? '도금' : it.claimPurity) : (Math.random() < acc ? it.purity : pick(Object.keys(PUR)));
   if (t === 'loupe') { c.rev.loupe = []; UI.scrollTo = 'stage'; }
   if ((t === 'auth' || t === 'purity' || t === 'loupe') && it.fake && ARCH[c.arch].knowFake) {
     c.patience--; c.say = pick(LINES.fakeNervous); c.mood = 'bad';
@@ -725,7 +820,7 @@ function useTool(t) {
   }
   if (t === 'origin') {
     c.asked = true;
-    const nervous = G.perks.sharpEye ? it.stolen : it.stolen ? Math.random() < 0.8 : Math.random() < 0.12;
+    const nervous = G.perks.sharpEye ? it.stolen : it.stolen ? Math.random() < (up('cctv') ? 0.95 : 0.8) : Math.random() < (up('cctv') ? 0.05 : 0.12);
     c.say = nervous ? pick(LINES.stolen) : pick(ARCH[c.arch].origin);
     c.mood = nervous ? 'bad' : '';
   }
@@ -801,7 +896,7 @@ function deal(price) {
 function remember(c, how, ref) {
   const it = c.item;
   if (how === 'passed' && !c.rev.loupe && !c.rev.auth && !c.rev.purity) return;
-  (G.today || (G.today = [])).push({ how, ref, key: it.key, name: it.name, fake: it.fake, gold: it.gold, tells: it.tells || {}, looked: c.rev.loupe ? [...c.rev.loupe] : null });
+  (G.today || (G.today = [])).push({ how, ref, key: it.key, name: it.name, fake: it.fake, premium: !!it.premium, gold: it.gold, tells: it.tells || {}, looked: c.rev.loupe ? [...c.rev.loupe] : null });
 }
 
 function rejectGuest() {
@@ -812,13 +907,15 @@ function rejectGuest() {
   render();
 }
 
+const canAsk = x => x.offerDay !== G.day || (x.offerN || 1) < (up('shelf') ? 2 : 1);
 function askBuyer(id) {
   const x = G.inv.find(v => v.id === id);
-  if (!x || x.offerDay === G.day || G.phase !== 'day' && G.phase !== 'closed') return;
-  x.offerDay = G.day;
+  if (!x || !canAsk(x) || G.phase !== 'day' && G.phase !== 'closed') return;
+  x.offerN = x.offerDay === G.day ? (x.offerN || 1) + 1 : 1; x.offerDay = G.day;
+  x.spotted = false;
   if (x.fake && Math.random() < 0.7) {
     x.offer = Math.max(1, Math.round(realOf(x)));
-    x.offerNote = '구매자가 가품을 알아봤다. 평판 -3';
+    x.offerNote = '구매자가 가품을 알아봤다. 평판 -3'; x.spotted = true;
     G.rep = clamp(G.rep - 3);
   } else {
     x.offer = Math.max(1, Math.round(realOf(x) * R(0.85, 1.25) * (0.92 + G.rep / 600)));
@@ -834,6 +931,8 @@ function sellItem(id, goldShop) {
   if (!price) return;
   G.cash += price; G.inv.splice(i, 1);
   const pf = price - x.cost; G.stats.sold++; G.stats.profit += pf;
+  // 구매자가 못 알아본 가품은 며칠 뒤 환불하러 온다
+  if (!goldShop && x.fake && !x.spotted) (G.backlash || (G.backlash = [])).push({ name: x.name, price, knew: !!x.exposed, due: G.day + RI(2, 3) });
   log(`<span class="chip g">판매</span><b>${x.name}</b> ${won(price)} <span class="${pf >= 0 ? 'pos' : 'neg'}">(${pf >= 0 ? '+' : ''}${won(pf)})</span>${goldShop && x.fake ? ' · 도금이었다' : ''}`);
   render();
 }
@@ -855,9 +954,15 @@ function reviewDay() {
     const seen = tellIds.filter(id => e.looked && e.looked.includes(id)), unseen = tellIds.filter(id => !seen.includes(id));
     const clue = [seen.length ? `보고도 놓친 단서: ${spotName(e.key, seen)}` : '', unseen.length ? `확인 안 한 단서: ${spotName(e.key, unseen)}` : '',
       !tellIds.length && e.gold ? '순도 검사로만 알 수 있었다' : ''].filter(Boolean).join(' · ');
-    out.push(`<span class="chip r">복기</span>${e.how === 'bought' ? '사들인' : '맡아둔'} ${e.name}은(는) 가품이었다.${clue ? ' ' + clue : ''}`);
-    const x = e.how === 'bought' ? G.inv.find(v => v.id === e.ref) : (G.pawns.find(t => t.no === e.ref) || {}).item;
+    out.push(`<span class="chip r">복기</span>${e.how === 'bought' ? '사들인' : '맡아둔'} ${e.name}은(는) ${e.premium ? '정교한 S급 ' : ''}가품이었다.${clue ? ' ' + clue : ''}`);
+    const t = e.how === 'pawned' ? G.pawns.find(v => v.no === e.ref) : null;
+    const x = e.how === 'bought' ? G.inv.find(v => v.id === e.ref) : t && t.item;
     if (x) x.exposed = true;
+    if (x && up('insure') && !x.insured) {
+      const pay = Math.round((t ? t.loan : x.cost) * 0.4); x.insured = true; G.cash += pay;
+      out.push(`<span class="chip g">보험</span>가품 보증보험에서 ${won(pay)}을 보상받았다.`);
+    }
+    if (x && e.how === 'bought' && !out.some(l => l.includes('짝퉁 업자'))) out.push('<span class="chip y">팁</span>판명된 가품은 금고에서 <b>사기 신고</b>하거나 <b>짝퉁 업자</b>에게 넘겨 손실을 줄일 수 있다.');
   }
   if (fresh) out.push(`<span class="chip g">도감</span>감정 도감에 새 단서 ${fresh}개가 기록됐다.`);
   G.today = [];
@@ -882,11 +987,22 @@ function endDay() {
   });
   const seize = (name, cost) => { G.rep = clamp(G.rep - 12); G.stats.seized++; G.stats.profit -= cost;
     rep.push(`<span class="chip r">압수</span>경찰 방문. ${name}은(는) 도난품이었다. <b class="neg">-${won(cost)}</b>, 평판 -12`); };
-  G.inv = G.inv.filter(x => { if (x.stolen && Math.random() < 0.3) { seize(x.name, x.cost); return false; } return true; });
-  G.pawns = G.pawns.filter(p => { if (p.item.stolen && Math.random() < 0.3) { seize(p.item.name, p.loan); return false; } return true; });
+  const seizeP = up('cctv') ? 0.15 : 0.3;
+  G.inv = G.inv.filter(x => { if (x.stolen && Math.random() < seizeP) { seize(x.name, x.cost); return false; } return true; });
+  G.pawns = G.pawns.filter(p => { if (p.item.stolen && Math.random() < seizeP) { seize(p.item.name, p.loan); return false; } return true; });
   if (G.day % 7 === 0) { G.cash -= RENT; rep.push(`<span class="chip r">월세</span>가게 월세를 냈다. <b class="neg">-${won(RENT)}</b>`); }
   const old = G.gold; G.gold = Math.round(G.gold * R(0.95, 1.06) * 10) / 10;
   rep.push(`<span class="chip y">금시세</span>내일 1돈 ${old} → <b>${G.gold}</b>만원`);
+  if (G.cash < 0 && G.day < DAYS) { // 파산 대신 사채: 이자 20%, 빚 2,500만원까지
+    const need = Math.ceil(-G.cash / 100) * 100;
+    if ((G.debt || 0) + need * 1.2 <= RESCUE_CAP) {
+      G.cash += need; G.debt = (G.debt || 0) + need * 1.2;
+      rep.push(`<span class="chip r">사채</span>돈이 모자라 사채업자에게 ${won(need)}을 빌렸다. 갚을 돈 +${won(need * 1.2)} (이자 20%)`);
+    }
+  }
+  if (G.day >= DAYS && G.debt) {
+    rep.push(`<span class="chip r">상환</span>빚 ${won(G.debt)}을 갚았다.`); G.cash -= G.debt; G.debtFail = G.cash < 0; G.debt = 0;
+  }
   G.report = [...rep, ...review];
   G.phase = G.cash < 0 ? 'bankrupt' : G.day >= DAYS ? 'end' : 'night';
   render();
@@ -2122,7 +2238,10 @@ function stageOverlay(st) {
   let html = '';
   if (V.loupe && !sp) html += V.spots.map(s => { const done = checked.includes(s.id);
     return `<button class="ov pin ${done ? 'done' : ''}" data-spot="${s.id}" style="display:none" aria-label="${s.label} 들여다보기" title="${s.label}">${done ? '✓' : '+'}</button>`; }).join('');
-  if (sp) html += `<div class="ov focus-bar"><span>🔍 ${sp.label}</span><button class="btn mini" data-act="unfocus">전체 보기</button></div>`;
+  // UV 램프: 확대한 부위가 가품 티가 나는 곳이면 형광으로 번진다
+  const uvHit = !!(sp && up('uv') && G.cur && G.cur.item && G.cur.item.tells && G.cur.item.tells[sp.id]);
+  st.classList.toggle('uv-hit', uvHit);
+  if (sp) html += `<div class="ov focus-bar"><span>🔍 ${sp.label}${up('uv') ? (uvHit ? ' <b class="uv-tag">형광 반응!</b>' : ' <span class="uv-none">UV 반응 없음</span>') : ''}</span><button class="btn mini" data-act="unfocus">전체 보기</button></div>`;
   html += `<span class="ov stage-cap">${sp ? '끌면 원래 자리로 물러난다' : V.loupe ? '＋ 표시를 눌러 루페로 들여다보기' : '드래그해서 돌려보기'}</span>`;
   st.insertAdjacentHTML('beforeend', html);
   V.pins = [...st.querySelectorAll('.pin')];
@@ -2287,8 +2406,8 @@ function renderCounter() {
       ${stamp}
     </div>
     ${c.status === 'talk' ? `<div class="tools">${tools.map(t => {
-      const T = TOOLS[t], used = t === 'origin' ? c.asked : c.rev[t] !== undefined;
-      return `<button class="btn" data-tool="${t}" ${used || G.ap < T.cost ? 'disabled' : ''}>${T.label}<span class="c">${T.cost ? '감정력 ' + T.cost : '무료'}</span></button>`;
+      const T = TOOLS[t], cost = toolCost(t), used = t === 'origin' ? c.asked : c.rev[t] !== undefined;
+      return `<button class="btn" data-tool="${t}" ${used || G.ap < cost ? 'disabled' : ''}>${T.label}<span class="c">${cost ? '감정력 ' + cost : '무료'}</span></button>`;
     }).join('')}
       <button class="btn danger" data-act="buyAP" ${(G.apBought || 0) >= AP_BUY_MAX || G.cash < apPrice() ? 'disabled' : ''} title="오늘 ${AP_BUY_MAX - (G.apBought || 0)}번 더 살 수 있다">감정력 +1 사기<span class="c">${(G.apBought || 0) >= AP_BUY_MAX ? '오늘 끝' : `${won(apPrice())} · ${AP_BUY_MAX - (G.apBought || 0)}회`}</span></button></div>` : ''}
     ${tipHTML(c)}
@@ -2318,7 +2437,7 @@ function tipHTML(c) {
 function renderChoice(c) {
   const S = STORY[c.story], r = G.reg[S.arc], sp = SPEAKERS[c.speaker], isReg = c.speaker in REG;
   const talk = c.status === 'talk';
-  const opts = talk ? S.choices(r) : [];
+  const opts = talk ? S.choices(r, c) : [];
   const html = `<section class="counter">
     <div class="qbar"><span>오늘 손님 <b>${G.served}/${G.queue}</b></span><span>사연 이벤트</span></div>
     <div class="guest">
@@ -2351,7 +2470,8 @@ function renderSide() {
     let act;
     if (x.gold) act = `<div class="offer-box"><span class="q">금은방 매입가 ${won(realOf(x))}<span class="hint"> (오늘 시세)</span></span><button class="btn mini" data-gold="${x.id}" ${canSell ? '' : 'disabled'}>금은방에 팔기</button></div>`;
     else if (x.offer) act = `<div class="offer-box"><span class="q">${x.offerNote}: <b class="num">${won(x.offer)}</b></span><span><button class="btn mini primary" data-sell="${x.id}">판매</button> <button class="btn mini" data-hold="${x.id}">보류</button></span></div>`;
-    else act = `<div class="offer-box"><span class="hint">${x.offerDay === G.day ? '오늘은 더 이상 찾는 사람이 없다' : '진열하면 하루 한 번 구매 제안이 온다'}</span><button class="btn mini" data-buyer="${x.id}" ${x.offerDay === G.day || !canSell ? 'disabled' : ''}>진열하기</button></div>`;
+    else act = `<div class="offer-box"><span class="hint">${!canAsk(x) ? '오늘은 더 이상 찾는 사람이 없다' : `진열하면 하루 ${up('shelf') ? '두' : '한'} 번 구매 제안이 온다`}</span><button class="btn mini" data-buyer="${x.id}" ${!canAsk(x) || !canSell ? 'disabled' : ''}>진열하기</button></div>`;
+    if (x.exposed && !x.gold) act += `<div class="offer-box"><span class="hint">판명된 가품이다.</span><span>${x.reported ? '' : `<button class="btn mini" data-fraud="${x.id}">사기 신고</button> `}<button class="btn mini" data-dump="${x.id}">짝퉁 업자 ${won(dumpPrice(x))}</button></span></div>`;
     return `<div class="inv-item"><div class="inv-top">${thumb(x)}<span class="n">${x.name}</span><span class="num">${won(x.cost)}</span></div>
       <div class="inv-meta">${x.from}${notes ? ' · ' + notes : ' · 감정 기록 없음'}</div>${act}</div>`;
   }).join('') : '<div class="empty-note">금고가 비어 있다. 손님에게서 물건을 사들이거나, 유질된 전당물이 여기로 온다.</div>';
@@ -2366,6 +2486,9 @@ function renderSide() {
     : '<div class="empty-note">아직 단골이 없다. 다시 찾아올 손님은 여기에 적힌다.</div>';
   return `<aside class="side">
     <div class="box" id="sec-inv"><h3>금고 <small>${G.inv.length}점 · 원가 ${won(G.inv.reduce((a, x) => a + x.cost, 0))}</small></h3><div class="inv">${inv}</div></div>
+    <div class="box"><h3>급전 창구 <small>${G.debt ? `빚 ${won(G.debt)}` : '빚 없음'}</small></h3>
+      <div class="offer-box"><span class="hint">은행에서 ${won(LOAN)}씩, 이자 ${LOAN_RATE * 100}%. 빚은 마지막 날 자동으로 갚는다.</span>
+      <span><button class="btn mini" data-act="borrow" ${(G.debt || 0) + LOAN * (1 + LOAN_RATE) > DEBT_CAP ? 'disabled' : ''}>${won(LOAN)} 빌리기</button>${G.debt ? ` <button class="btn mini" data-act="repay" ${G.cash > 0 ? '' : 'disabled'}>갚기</button>` : ''}</span></div></div>
     <div class="box" id="sec-pawn"><h3>전당표 <small>${G.pawns.length}건</small></h3><div class="tickets">${tickets}</div></div>
     <div class="box"><h3>감정 도감 <small>${DEX.size}/${DEX_ALL.length}곳</small></h3>
       <div class="offer-box"><span class="hint">가품을 잡아내거나 밤에 판명되면 단서가 기록된다. 판이 바뀌어도 남는다.</span><button class="btn mini" data-act="dex">도감 펼치기</button></div></div>
@@ -2413,6 +2536,7 @@ function renderModal() {
         <li><b>장물</b>: 출처가 수상한 물건은 밤에 경찰이 압수해 갈 수 있다.</li>
         <li><b>금</b>: 저울과 순도 검사로 금은방 매입가를 바로 계산할 수 있다. 시세는 매일 바뀐다.</li>
         <li><b>단골</b>: 다시 찾아오는 손님들이 있다. 오늘의 선택이 그들의 다음 방문을 바꾼다.</li>
+        <li><b>손실 회복</b>: 가품을 샀어도 끝이 아니다. 사기 신고, 짝퉁 업자 처분, 은행 급전으로 버티고, 밤에는 가게를 정비해 다음을 대비한다.</li>
         <li><b>복기와 도감</b>: 밤마다 오늘 감정이 맞았는지 알려주고, 잡아낸 가품 단서는 도감에 모인다. 진행은 자동 저장된다.</li>
       </ul>
       ${STORE.save ? `<button class="btn primary" data-act="continue">이어하기 · D${STORE.save.day} · 현금 ${won(STORE.save.cash)}</button> <button class="btn" data-act="start">새로 시작</button>`
@@ -2427,13 +2551,17 @@ function renderModal() {
       <div class="row"><span>현금</span><span>${won(G.cash)}</span></div>
       <div class="row"><span>평판</span><span>${G.rep}</span></div>
       <div class="row"><span>다음 월세</span><span>D${Math.ceil((G.day + 1) / 7) * 7}</span></div>
+      ${G.debt ? `<div class="row"><span>빚 (마지막 날 상환)</span><span>${won(G.debt)}</span></div>` : ''}
+      <h3 class="shop-h">가게 정비</h3>
+      <div class="shop">${Object.entries(UPGRADES).map(([k, U]) => `<div class="up ${up(k) ? 'owned' : ''}"><b>${U.name}</b><span>${U.desc}</span>
+        ${up(k) ? '<em>설치됨</em>' : `<button class="btn mini" data-up="${k}" ${G.cash < U.cost ? 'disabled' : ''}>${won(U.cost)}</button>`}</div>`).join('')}</div>
       <button class="btn primary" data-act="nextDay">${G.day + 1}일차 문 열기</button>
     </div></div></div>`;
   }
   if (G.phase === 'end' || G.phase === 'bankrupt') {
     const bank = G.phase === 'bankrupt';
     const grade = bank ? 'F' : G.cash >= GOAL * 1.3 ? 'S' : G.cash >= GOAL ? 'A' : G.cash >= GOAL * 0.7 ? 'B' : 'C';
-    const title = bank ? '월세를 못 내 문을 닫았다' : grade === 'S' ? '골목의 금고왕' : grade === 'A' ? '가게를 지켜냈다' : grade === 'B' ? '겨우 버텼다' : '목표에 못 미쳤다';
+    const title = bank ? (G.debtFail ? '빚을 다 갚지 못하고 문을 닫았다' : '월세를 못 내 문을 닫았다') : grade === 'S' ? '골목의 금고왕' : grade === 'A' ? '가게를 지켜냈다' : grade === 'B' ? '겨우 버텼다' : '목표에 못 미쳤다';
     const s = G.stats;
     return `<div class="overlay"><div class="modal"><div class="slip enter">
       <div class="slip-head"><span class="t">결 산 서</span><span class="mode">${bank ? `D${G.day} 폐업` : `D${DAYS} 결산`}</span></div>
@@ -2457,11 +2585,12 @@ function render() {
   const ap = Array.from({ length: Math.max(AP_MAX, G.ap) }, (_, i) => `<i class="${i < G.ap ? 'on' : ''}"></i>`).join('');
   document.getElementById('app').innerHTML = `
     <header class="sign">
-      <div class="brand"><span class="seal" aria-hidden="true">典當</span><div><h1>나는 전당포 사장이다</h1><small>골목 전당포 · 프로토타입 v0.6</small></div></div>
+      <div class="brand"><span class="seal" aria-hidden="true">典當</span><div><h1>나는 전당포 사장이다</h1><small>골목 전당포 · 프로토타입 v0.7</small></div></div>
       <div class="stats">
         <div class="stat"><span class="k">영업일</span><span class="v">D${G.day}/${DAYS}</span></div>
         <div class="stat"><span class="k">현금</span><span class="v">${won(G.cash)}</span></div>
         <div class="stat"><span class="k">평판</span><span class="v">${G.rep}</span></div>
+        ${G.debt ? `<div class="stat"><span class="k">빚</span><span class="v neg">${won(G.debt)}</span></div>` : ''}
         <div class="stat"><span class="k">금시세 24K 1돈</span><span class="v">${G.gold}만</span></div>
         <div class="stat"><span class="k">감정력</span><span class="ap" aria-label="감정력 ${G.ap}">${ap}</span></div>
       </div>
@@ -2489,6 +2618,9 @@ document.addEventListener('click', e => {
   if (d.tool) return useTool(d.tool);
   if (d.choice) return choose(Number(d.choice));
   if (d.spot) return inspectSpot(d.spot);
+  if (d.up) return buyUpgrade(d.up);
+  if (d.fraud) return reportFraud(Number(d.fraud));
+  if (d.dump) return dumpFake(Number(d.dump));
   if (d.jump) { const el = d.jump === 'counter' ? document.querySelector('.counter') : document.getElementById(d.jump); if (el) el.scrollIntoView({ block: 'start', behavior: V.reduced ? 'auto' : 'smooth' }); return; }
   if (d.step && c) { c.offer = Math.max(1, Math.round(c.offer) + Number(d.step)); return render(); }
   if (d.pct && c) { c.offer = Math.max(1, Math.round(c.ask * Number(d.pct))); return render(); }
@@ -2503,6 +2635,8 @@ document.addEventListener('click', e => {
     case 'reject': return rejectGuest();
     case 'next': return nextCustomer();
     case 'buyAP': return buyAP();
+    case 'borrow': return borrow();
+    case 'repay': return repay();
     case 'tipOff': G.tutorial = false; return render();
     case 'dex': UI.dex = true; return render();
     case 'dexClose': UI.dex = false; return render();
