@@ -46,7 +46,7 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid; gap: 16px;
 }
-button { font: inherit; cursor: pointer; }
+button { font: inherit; cursor: pointer; touch-action: manipulation; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
 
@@ -133,6 +133,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
   background: var(--bg); color: var(--fg); border: 1px solid var(--brass-dim); border-radius: 3px; padding: 6px 10px;
 }
 .step { min-width: 46px; justify-content: center; padding: 6px 8px; font-family: var(--f-mono); font-size: 14px; }
+.steps { display: grid; gap: 6px; max-width: 460px; }
+.steps .step { min-width: 0; padding: 6px 2px; white-space: nowrap; font-size: 13px; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .hint { font-size: 13px; color: var(--muted); }
 
@@ -156,7 +158,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .ticket .no { font-family: var(--f-mono); color: var(--stamp); font-weight: 700; font-size: 13px; }
 .ticket .d { color: var(--ink-muted); font-family: var(--f-mono); font-size: 13px; }
 /* 감정 패드: 3D 물건이 놓이는 녹색 펠트 */
-.item.has-stage { grid-template-columns: minmax(0, 250px) minmax(0, 1fr); align-items: start; }
+.item.has-stage { grid-template-columns: minmax(0, 290px) minmax(0, 1fr); align-items: start; }
 @media (max-width: 560px) { .item.has-stage { grid-template-columns: minmax(0, 1fr); } }
 .stage {
   position: relative; width: 100%; max-width: 100%; aspect-ratio: 1; border-radius: 3px; overflow: hidden;
@@ -167,6 +169,31 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .stage canvas:active { cursor: grabbing; }
 .stage .fallback { display: grid; place-items: center; height: 100%; font-size: 72px; }
 .stage-cap { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-size: 12px; color: rgba(234,223,202,.7); pointer-events: none; }
+/* 루페: 확인할 곳 표시와 확대 중 상단 바 */
+.pin {
+  position: absolute; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; padding: 0; border-radius: 50%;
+  display: grid; place-items: center; font-size: 16px; font-weight: 700; line-height: 1;
+  border: 2px solid var(--brass); background: rgba(23,18,14,.72); color: var(--brass);
+  box-shadow: 0 0 0 4px rgba(209,166,80,.2);
+}
+.pin.done { background: var(--brass); color: var(--ink); }
+.pin:hover { box-shadow: 0 0 0 7px rgba(209,166,80,.32); }
+@media (prefers-reduced-motion: no-preference) {
+  .pin:not(.done) { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 9px rgba(209,166,80,.04); } }
+}
+.focus-bar {
+  position: absolute; top: 6px; left: 6px; right: 6px; display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  background: rgba(23,18,14,.78); border-radius: 3px; padding: 4px 4px 4px 10px; font-size: 13px; color: var(--fg);
+}
+.eye { margin-top: 12px; border-top: 1px dashed var(--paper-line); padding-top: 8px; display: grid; gap: 5px; }
+.eye-h { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 8px; font-size: 13px; color: var(--ink-muted); }
+.eye-h b { color: var(--ink); font-size: 14px; }
+.eye-row { display: grid; gap: 1px; text-align: left; padding: 6px 9px; border-radius: 2px; background: transparent; color: var(--ink); border: 1px solid var(--paper-line); }
+.eye-row b { font-size: 14px; }
+.eye-row span { font-size: 13px; color: var(--ink-muted); }
+.eye-row.done b { color: #4e7a37; }
+.eye-row:hover { border-color: var(--stamp); }
 .th { width: 46px; height: 46px; border-radius: 3px; background: var(--felt); flex: none; object-fit: cover; }
 .th.sm { width: 34px; height: 34px; }
 .ticket-row { display: flex; gap: 8px; align-items: center; }
@@ -190,6 +217,59 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 6px; border-radius: 2px; margin-right: 6px; border: 1px solid currentColor; }
 .chip.g { color: var(--good); } .chip.r { color: var(--bad); } .chip.y { color: var(--brass); }
 .pos { color: var(--good); } .neg { color: var(--bad); }
+
+/* 휴대폰: 손가락 기준 터치 영역(44px)과 좁은 화면 배치 */
+@media (pointer: coarse) {
+  .btn.mini, .btn.step, .focus-bar .btn, .offer-row input { min-height: 44px; }
+  .pin { width: 40px; height: 40px; margin: -20px 0 0 -20px; font-size: 18px; }
+}
+@media (max-width: 560px) {
+  .tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tools .btn { justify-content: center; }
+}
+
+/* 하단 바로가기 탭: 한 줄 배치(860px 이하)에서만 */
+.tabs { display: none; }
+@media (max-width: 860px) {
+  .tabs {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    background: rgba(23,18,14,.96); border-top: 1px solid var(--brass-dim);
+    padding: 4px max(6px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left, 0px));
+  }
+  #app { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  .counter, .side .box { scroll-margin-top: 10px; }
+}
+.tab { min-height: 48px; background: transparent; border: 0; color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 2px; }
+.tab:active { color: var(--brass); }
+.tab b { font-family: var(--f-mono); font-size: 12px; min-width: 18px; padding: 1px 5px; border-radius: 9px; background: var(--line); color: var(--fg); }
+.tab b.hot { background: var(--brass); color: var(--ink); }
+
+/* 밤 가게 정비 */
+.shop-h { font-family: var(--f-display); font-size: 18px; margin: 16px 0 6px; }
+.shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 6px; }
+.up { display: grid; gap: 2px; border: 1px solid var(--paper-line); border-radius: 2px; padding: 8px 10px; }
+.up b { font-size: 14px; } .up span { font-size: 13px; color: var(--ink-muted); }
+.up em { font-style: normal; font-size: 13px; color: #4e7a37; font-weight: 700; }
+.up .btn { justify-self: start; color: var(--ink); border-color: var(--ink-muted); margin-top: 4px; }
+.up.owned { background: rgba(78,122,55,.08); }
+/* UV 램프 반응 */
+.stage.uv-hit::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 52%, rgba(170,90,255,.38), rgba(120,60,255,.08) 45%, transparent 70%); mix-blend-mode: screen; }
+.uv-tag { color: #d6a8ff; } .uv-none { color: var(--muted); font-size: 12px; }
+
+/* 첫날 도움말 */
+.tip { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; border: 1px dashed var(--brass); border-radius: 3px; padding: 9px 12px; font-size: 14px; background: rgba(209,166,80,.07); }
+.tip b { color: var(--brass); }
+/* 감정 도감 */
+.modal.wide { width: min(760px, 100%); }
+.dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 8px; margin: 10px 0; }
+.dex-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; border: 1px solid var(--paper-line); border-radius: 2px; padding: 8px; }
+.dex-row b { display: block; font-size: 14px; }
+.dex-row span { font-size: 13px; color: var(--ink-muted); }
+.dex-row.locked { opacity: .55; }
+.dex-imgs { display: flex; gap: 6px; }
+.dex-imgs figure { margin: 0; text-align: center; font-size: 12px; color: var(--ink-muted); }
+.dex-imgs img { display: block; width: 64px; height: 64px; object-fit: contain; background: #7c7c78; border-radius: 2px; }
+.dex-lock { width: 64px; height: 64px; display: grid; place-items: center; font-size: 26px; color: var(--ink-muted); border: 1px dashed var(--paper-line); border-radius: 2px; }
 
 /* 모달 */
 .overlay { position: fixed; inset: 0; background: rgba(10,7,5,.78); display: grid; place-items: center; z-index: 20;
@@ -244,45 +324,110 @@ const ITEMS = {
   gneck:   { name: '금목걸이', e: '📿', gold: true, don: [3, 10] },
   gring:   { name: '금 쌍가락지', e: '💍', gold: true, don: [1, 4] },
   gbrace:  { name: '금팔찌', e: '🔗', gold: true, don: [4, 12] },
+  cartier: { name: '까르띠에 탱크 머스트', e: '⌚', base: 380 },
+  hermes:  { name: '에르메스 버킨 30', e: '👜', base: 2200 },
+  airpods: { name: '에어팟 맥스', e: '🎧', base: 55 },
+  jordan:  { name: '에어 조던 1 시카고', e: '👟', base: 90 },
+  lp:      { name: '비틀즈 애비 로드 LP 초판', e: '💿', base: 350 },
+  moonjar: { name: '백자 달항아리', e: '🏺', base: 2500, fakeBoost: 0.35 },
+  pearl:   { name: '아코야 진주 목걸이', e: '📿', base: 280 },
+  ipad:    { name: '아이패드 프로', e: '📱', base: 110, nofake: true },
+  ps5:     { name: '플레이스테이션 5', e: '🎮', base: 50, nofake: true },
+  lego:    { name: '레고 밀레니엄 팔콘 (미개봉)', e: '🧱', base: 130 },
+  goldbar: { name: '골드바', e: '🟨', gold: true, don: [10, 27], purity: '24K' },
+  turtle:  { name: '금거북이', e: '🐢', gold: true, don: [3, 15], purity: '24K' },
+};
+
+// 루페로 들여다볼 곳. real은 감정서에 적히는 정품 기준이고, 진짜 판정은 플레이어가 3D 모델을 보고 한다.
+const GOLD_MARK = [{ id: 'mark', label: '순도 각인', real: '각인이 곧 실제 순도다. 뒤에 GP가 붙으면 도금(Gold Plated)' }];
+const SPOTS = {
+  rolex: [{ id: 'dial', label: '다이얼 로고', real: '왕관 갈퀴가 5개, 로고가 12시 아래 정중앙에 반듯하다' },
+          { id: 'back', label: '케이스 뒷면', real: '각인이 둘레를 고르게 한 바퀴 돌고, 가운데 일련번호가 있다' }],
+  omega: [{ id: 'dial', label: '다이얼 로고', real: 'Ω · OMEGA · Seamaster가 정중앙에 반듯하고 선명하다' },
+          { id: 'back', label: '케이스 뒷면', real: '각인이 둘레를 고르게 한 바퀴 돌고, 가운데 일련번호가 있다' }],
+  chanel: [{ id: 'lock', label: '잠금쇠 CC', real: '두 C의 크기가 같고 가운데서 고리처럼 맞물린다' },
+           { id: 'back', label: '뒤판 퀼팅', real: '마름모 줄이 가운데서 어긋나지 않고, 땀이 촘촘하다' }],
+  lv: [{ id: 'canvas', label: '모노그램 캔버스', real: 'LV 글자가 똑바로 서 있고, 진갈색 바탕에 겨자색 무늬' },
+       { id: 'stamp', label: '열각 로고', real: 'LOUIS VUITTON / PARIS · made in France, 철자와 줄이 반듯하다' }],
+  leica: [{ id: 'dot', label: '레드 닷 로고', real: '진한 빨강 원 정중앙에 흰 필기체 Leica' },
+          { id: 'top', label: '상판 각인', real: 'Leica M6 옆에 No.로 시작하는 7자리 일련번호' }],
+  guitar: [{ id: 'head', label: '헤드 로고', real: 'Fender 로고 아래 STRATOCASTER가 적혀 있다' },
+           { id: 'plate', label: '넥 플레이트', real: '나사 4개, US로 시작하는 일련번호' }],
+  diamond: [{ id: 'girdle', label: '다이아 테두리', real: '테두리(거들)에 GIA로 시작하는 레이저 각인' },
+            { id: 'band', label: '링 안쪽', real: '백금 각인 PT950과 캐럿 표기' }],
+  pen: [{ id: 'star', label: '캡 꼭대기 별', real: '흰 별의 끝이 둥근 6각이다' },
+        { id: 'clip', label: '클립 각인', real: 'MONTBLANC(붙여 씀)과 일련번호' }],
+  celadon: [{ id: 'foot', label: '굽바닥', real: '모래 붙은 거친 굽에 흰 규석 받침 자국이 3~5개' },
+            { id: 'crackle', label: '유약 빙열', real: '빙열이 가늘고 불규칙하다. 바둑판처럼 반듯하면 인공 빙열' }],
+  cartier: [{ id: 'dial', label: '다이얼', real: '4시는 IV가 아니라 IIII, 6시 아래에 SWISS MADE' },
+            { id: 'back', label: '케이스 뒷면', real: '모서리 나사 4개, No.로 시작하는 일련번호' }],
+  hermes: [{ id: 'lock', label: '자물쇠', real: '앞면 HERMES, 아래에 열쇠와 같은 3자리 번호' },
+           { id: 'stamp', label: '열각 로고', real: 'HERMÈS(E 위에 악센트) / PARIS / MADE IN FRANCE, 줄이 반듯하다' }],
+  airpods: [{ id: 'serial', label: '왼쪽 쿠션 안쪽', real: 'Designed by Apple in California 문구와 일련번호' },
+            { id: 'mesh', label: '오른쪽 쿠션 원단', real: '니트 원단의 짜임이 아주 촘촘하다' }],
+  jordan: [{ id: 'swoosh', label: '스우시', real: '끝이 날렵하게 위로 뻗고, 스티치가 촘촘하다' },
+           { id: 'wings', label: '윙 로고', real: '농구공이 날개 정중앙, AIR JORDAN 뒤에 ™' }],
+  lp: [{ id: 'label', label: '레코드 라벨', real: '검정 바탕 금색 글씨, ℗ 1969' },
+       { id: 'runout', label: '런아웃 각인', real: '손으로 새긴 YEX 749-1 (끝자리 1이 초판)' }],
+  moonjar: [{ id: 'seam', label: '허리 이음매', real: '위아래를 따로 빚어 붙인 이음 자국이 허리를 비스듬히 지난다' },
+            { id: 'foot', label: '굽바닥', real: '모래 받침 흔적이 있고, 글자 도장(관지)은 없다' }],
+  pearl: [{ id: 'card', label: '감정서', real: '발행처 한국진주감정원, 무지개 홀로그램 씰' },
+          { id: 'clasp', label: '걸쇠 각인', real: '금색 걸쇠에 K18 각인' }],
+  lego: [{ id: 'logo', label: '박스 로고', real: '빨간 사각형, 흰 글씨에 노랑·검정 테두리와 ®' },
+         { id: 'seal', label: '옆면 씰', real: '투명 원형 씰이 온전하다. 없거나 칼자국이면 재포장품' }],
+  goldbar: [{ id: 'mark', label: '바 각인', real: 'FINE GOLD 999.9와 일련번호. GP가 붙으면 도금' }],
+  gneck: GOLD_MARK, gring: GOLD_MARK, gbrace: GOLD_MARK, turtle: GOLD_MARK,
 };
 
 const ARCH = {
   student: { label: '급전 필요한 대학생', e: '🧑‍🎓', desp: [0.35, 0.5], fake: 0.08, knowFake: false, stolen: 0.03, honest: true, redeem: 0.8, vulnerable: true, pawnRate: 0.55, patience: [4, 5],
-    items: ['iphone', 'macbook', 'switch', 'guitar', 'lv', 'gring'],
+    items: ['iphone', 'macbook', 'switch', 'guitar', 'lv', 'gring', 'ipad', 'airpods', 'jordan', 'ps5', 'lego'],
     sell: ['사장님, 이거 얼마 쳐주세요? 월세가 밀려서요.', '급하게 돈이 필요해서요. 이거 팔고 싶어요.'],
     pawn: ['다음 달 알바비 들어오면 꼭 찾으러 올게요. 맡길 수 있을까요?'],
     origin: ['작년에 알바비 모아서 산 거예요.', '생일 선물로 받은 건데... 어쩔 수 없죠.'],
     accept: '감사합니다! 진짜 살았어요.' },
   grandma: { label: '손주 등록금 마련하는 할머니', e: '👵', desp: [0.3, 0.45], fake: 0.12, knowFake: false, stolen: 0, honest: true, redeem: 0.85, vulnerable: true, pawnRate: 0.5, patience: [5, 6],
-    items: ['gneck', 'gring', 'gbrace', 'celadon', 'diamond', 'pen'],
+    items: ['gneck', 'gring', 'gbrace', 'celadon', 'diamond', 'pen', 'turtle', 'pearl', 'moonjar'],
     sell: ['이거 팔믄 얼마나 받을 수 있을까. 손주 등록금이 모자라서...', '영감 유품인데, 이제 보내줘야지.'],
     pawn: ['이거 맡기고 돈 좀 빌려줘요. 연금 나오면 찾으러 올게.'],
     origin: ['영감이 살아생전에 사준 거야.', '시집올 때 해온 거지. 오래됐어.'],
     accept: '고마워요 사장님, 복 받을 거야.' },
   reseller: { label: '말 빠른 리셀러', e: '😎', desp: [0.7, 0.85], fake: 0.25, knowFake: true, stolen: 0.05, honest: false, redeem: 0.45, pawnRate: 0.2, patience: [3, 4],
-    items: ['rolex', 'chanel', 'lv', 'omega', 'leica', 'switch'],
+    items: ['rolex', 'chanel', 'lv', 'omega', 'leica', 'switch', 'jordan', 'airpods', 'hermes', 'cartier', 'lego'],
     sell: ['사장님 이거 시세 아시죠? 깔끔하게 가시죠.', '급처분이에요. 빨리 현금화하고 싶어서요.'],
     pawn: ['며칠만 맡길게요. 물건 들어오면 바로 찾아가요.'],
     origin: ['해외 직구요. 영수증은 집에 있어요.', '매장에서 샀죠, 당연히.'],
     accept: '오케이, 거래 성사.' },
   nervous: { label: '땀 흘리는 남자', e: '😰', desp: [0.2, 0.35], fake: 0.1, knowFake: true, stolen: 0.65, honest: false, redeem: 0.15, pawnRate: 0.3, patience: [3, 4],
-    items: ['rolex', 'macbook', 'gbrace', 'leica', 'iphone', 'diamond'],
+    items: ['rolex', 'macbook', 'gbrace', 'leica', 'iphone', 'diamond', 'ipad', 'ps5', 'goldbar', 'cartier'],
     sell: ['저... 이거 지금 바로 현금으로 되죠?', '빨리 좀 해주세요. 시간이 없어서.'],
     pawn: ['이거 좀 맡아주세요. 금방... 금방 올게요.'],
     origin: ['제... 제 거예요. 진짜로.'],
     accept: '...현금으로 주세요. 빨리요.' },
   ceo: { label: '사업 접은 사장님', e: '🧔', desp: [0.45, 0.6], fake: 0.05, knowFake: false, stolen: 0.02, honest: true, redeem: 0.75, pawnRate: 0.65, patience: [4, 5],
-    items: ['rolex', 'omega', 'gbrace', 'pen', 'celadon', 'leica'],
+    items: ['rolex', 'omega', 'gbrace', 'pen', 'celadon', 'leica', 'goldbar', 'turtle', 'cartier', 'lp'],
     sell: ['잘나갈 때 산 건데, 이제 정리하려고요.', '가게 정리하면서 내놓는 거예요.'],
     pawn: ['거래처 대금 막아야 해서요. 며칠 안에 찾으러 옵니다.'],
     origin: ['잘나갈 때 산 거죠. 다 옛날 얘기예요.', '개업 10주년 때 저한테 준 선물이었어요.'],
     accept: '고맙습니다. 다시 일어서면 찾으러 오죠.' },
   lady: { label: '우아한 정장 손님', e: '👩‍💼', desp: [0.5, 0.7], fake: 0.55, knowFake: true, stolen: 0.05, honest: false, redeem: 0.1, pawnRate: 0.45, patience: [3, 4],
-    items: ['chanel', 'diamond', 'rolex', 'celadon', 'gneck'],
+    items: ['chanel', 'diamond', 'rolex', 'celadon', 'gneck', 'hermes', 'cartier', 'pearl', 'moonjar'],
     sell: ['감정 오래 걸리나요? 약속이 있어서요.', '정품이에요. 보증서는 집에 두고 왔고요.'],
     pawn: ['잠깐 맡기는 거예요. 금방 찾으러 올 거예요.'],
     origin: ['남편이 선물해준 거예요.', '본점에서 직접 샀어요.'],
     accept: '네, 그렇게 하죠.' },
+  collector: { label: '소장품 정리하는 노신사', e: '👴', desp: [0.4, 0.55], fake: 0.12, knowFake: false, stolen: 0.02, honest: true, redeem: 0.8, pawnRate: 0.4, patience: [5, 6],
+    items: ['celadon', 'moonjar', 'lp', 'pen', 'leica', 'guitar', 'cartier'],
+    sell: ['평생 모은 것들인데, 이제 정리할 때가 됐지요.', '아들 녀석이 이런 건 다 짐이라고 해서요.'],
+    pawn: ['잠시 맡겨 두겠소. 손주 학원비가 급해서.'],
+    origin: ['인사동에서 30년 전에 들인 물건이오.', '돌아가신 선친께서 아끼시던 거요.'],
+    accept: '고맙소. 좋은 주인 만나게 해주시오.' },
+  bride: { label: '파혼한 예비 신부', e: '👰', desp: [0.4, 0.55], fake: 0.1, knowFake: false, stolen: 0, honest: true, redeem: 0.5, vulnerable: true, pawnRate: 0.3, patience: [4, 5],
+    items: ['diamond', 'cartier', 'hermes', 'pearl', 'turtle', 'goldbar', 'gring'],
+    sell: ['예물로 받은 건데... 이제 보기도 싫어요.', '결혼이 깨져서요. 다 정리하려고요.'],
+    pawn: ['일단 맡기고, 마음 정리되면 찾으러 올게요.'],
+    origin: ['시댁에서 예물로 해준 거예요.', '백화점에서 같이 고른 건데...'],
+    accept: '...후련하네요. 감사합니다.' },
 };
 const LINES = {
   sellCounter: ['{n}만원은 받아야겠어요.', '에이, {n}만원은 주셔야죠.', '{n}만원. 더는 못 내려요.'],
@@ -291,6 +436,10 @@ const LINES = {
   leave: ['됐어요. 다른 데 갈게요.', '시간 낭비했네.'],
   stolen: ['어... 그게, 친구가 맡긴... 아니 제 거예요.', '그런 걸 왜 물어봐요? 살 거예요 말 거예요?', '주웠... 아니, 산 거예요.'],
   fakeNervous: ['아니, 뭘 그렇게 오래 봐요?', '정품이라니까요. 의심하시는 거예요?'],
+  // 제시가가 손님 마지노선에서 얼마나 떨어졌는지 말투로 드러난다
+  far: ['그건 너무하시네요.', '에이, 그 가격엔 못 드려요.', '농담이시죠?'],
+  near: ['음... 조금만 더 쓰시면 생각해볼게요.', '거의 다 왔는데요...', '아, 그 언저리면...'],
+  close: ['...고민되네요. 진짜 조금만 더요.', '하아, 그 정도면... 아니, 딱 조금만 더.', '거의 손이 갈 뻔했어요.'],
   reject: '아... 네. 알겠어요.',
   buyer: ['진열장 보고 들어온 손님이', '단골 수집가가', '중고 카페 보고 연락 온 손님이'],
 };
@@ -301,7 +450,7 @@ const REG = {
   broker:  { name: '정태식', e: '😰', label: '싼 물건 들고 오는 남자' },
   student: { name: '윤서연', e: '🧑‍🎓', label: '사진과 졸업반' },
 };
-const SPEAKERS = { ...REG, detective: { name: '강 형사', e: '🕵️', label: '관할서 강력팀' } };
+const SPEAKERS = { ...REG, detective: { name: '강 형사', e: '🕵️', label: '관할서 강력팀' }, buyer: { name: '화난 구매자', e: '😠', label: '우리 가게에서 물건을 산 손님' } };
 
 const aff = (r, n) => { r.aff = Math.max(-3, Math.min(5, r.aff + n)); };
 const repUp = n => { G.rep = clamp(G.rep + n); };
@@ -309,11 +458,25 @@ const ticketOf = k => G.pawns.find(p => p.story === k);
 const dropTicket = t => { G.pawns = G.pawns.filter(p => p !== t); };
 const invFromTicket = p => ({ ...p.item, id: G.uid++, cost: p.loan, from: p.owner + ' (유질)', offer: null, offerDay: 0 });
 const leicaItem = () => ({ key: 'leica', name: '라이카 M6 필름카메라', e: '📷', gold: false, base: 520, fake: false, stolen: false, cond: 'A', claimCond: 'A', real: 430, rev: { cond: 'A' } });
+// 첫날 첫 손님: 티가 확실한 가품 롤렉스로 루페 감정을 배운다
+const TUTOR = () => ({ arch: 'reseller', ik: 'rolex', item: { fake: true, cond: 'A', stolen: false }, mode: 'sell', askF: 1400 / 1300, tellsAll: true, patience: 6,
+  say: '사장님, 롤렉스 서브마리너예요. 정품에 상태 S급. 1,400만원에 깔끔하게 가시죠.' });
 const BROKER_SUPPLY = () => ({ arch: 'nervous', name: REG.broker.name, ik: pick(['rolex', 'omega', 'leica', 'macbook', 'diamond', 'gbrace']),
   item: { stolen: true, fake: false }, mode: 'sell', askF: 0.5, minF: 0.3, say: '오늘 물건이에요. 늘 하던 대로 반값.', regular: 'broker' });
 
 // type 'deal'은 일반 흥정, 나머지는 선택지 이벤트. day에 cond를 만족하면 그날 손님 줄에 끼어든다.
 const STORY = {
+  refund: { title: '환불 요구',
+    choices: (r, c) => { const b = c.data, half = Math.round(b.price / 2); return [
+      { label: '전액 환불한다', cost: b.price, hint: '평판을 지킨다', run() { G.cash -= b.price; repUp(2); return ['...다음부턴 제대로 확인하고 파세요.', '']; } },
+      { label: '반만 돌려준다', cost: half, hint: '절반은 받아들인다', run() {
+        G.cash -= half;
+        if (Math.random() < 0.55) { repUp(-2); return ['...이걸로 끝내죠. 두 번 다신 안 와요.', 'bad']; }
+        return [`장난해요? 신고할 거예요. ${reported(150, 8)}`, 'bad']; } },
+      { label: '모르는 일이라고 잡아뗀다', hint: '반반의 도박', run() {
+        if (Math.random() < (b.knew ? 0.3 : 0.5)) { repUp(-5); return ['두고 봐요. 동네에 다 소문낼 거니까.', 'bad']; }
+        return [`경찰서에서 봬요. ${reported(Math.round(b.price * 0.6) + 100, 10)}`, 'bad']; } },
+    ]; } },
   g1: { arc: 'grandma', day: 2, type: 'deal',
     spec: { arch: 'grandma', ik: 'gring', item: { don: 3, purity: '18K', fake: false, stolen: false }, mode: 'pawn', askF: 0.8, minF: 0.4,
       say: '이 쌍가락지, 영감이 장가올 때 해준 거야. 손주 입학금이 모자라서... 꼭 찾으러 올게.' },
@@ -417,6 +580,13 @@ const STORY = {
     ] },
 };
 
+// 가품을 팔고 난 뒤의 후폭풍. 날짜가 아니라 판매가 조건이라 STORY 큐에 안 들어가고 G.backlash로 온다.
+function refundEvent(b) {
+  return { kind: 'choice', story: 'refund', speaker: 'buyer', title: '환불 요구', data: b, status: 'talk', mood: 'bad',
+    say: `여기서 산 ${b.name}, 감정 맡겼더니 가품이래요! ${won(b.price)} 돌려주세요.`, info: `판매가 ${won(b.price)}${b.knew ? ' · 가품인 줄 알고 판 물건' : ''}` };
+}
+function reported(fine, rp) { G.cash -= fine; repUp(-rp); return `(손님이 신고했다. 벌금 ${won(fine)}, 평판 -${rp})`; }
+
 function spawnStory(id) {
   const S = STORY[id], r = G.reg[S.arc];
   G.storyDone[id] = true; r.met = true;
@@ -431,7 +601,7 @@ function storyFail(c) {
 
 function choose(i) {
   const c = G.cur; if (!c || c.kind !== 'choice' || c.status !== 'talk') return;
-  const S = STORY[c.story], r = G.reg[S.arc], ch = S.choices(r)[i];
+  const S = STORY[c.story], r = G.reg[S.arc], ch = S.choices(r, c)[i];
   if (!ch || (ch.cost && ch.cost > G.cash)) return;
   const [say, mood] = ch.run(r);
   c.say = say; c.mood = mood; c.status = 'done'; c.picked = ch.label;
@@ -447,28 +617,40 @@ function newGame() {
   G = { phase: 'intro', day: 1, cash: START_CASH, rep: 50, ap: AP_MAX, gold: 58, queue: 0, served: 0,
     cur: null, inv: [], pawns: [], log: [], ticket: 101, uid: 1, report: [],
     reg: Object.fromEntries(Object.keys(REG).map(k => [k, { met: false, aff: 0, flags: {}, note: '' }])),
-    storyQ: [], storyDone: {}, perks: {}, bonusQueue: 0, brokerToday: false,
+    storyQ: [], storyDone: {}, perks: {}, bonusQueue: 0, brokerToday: false, tutorial: true, today: [], recent: [], apBought: 0,
+    up: {}, debt: 0, backlash: [], eventQ: [],
     stats: { deals: 0, pawns: 0, redeemed: 0, forfeited: 0, seized: 0, sold: 0, profit: 0 } };
 }
 
 function log(html) { G.log.unshift(`<span class="num">D${G.day}</span> ${html}`); G.log = G.log.slice(0, 60); }
 
 function startDay() {
-  G.phase = 'day'; G.ap = AP_MAX; G.served = 0;
+  G.phase = 'day'; G.ap = AP_MAX; G.served = 0; G.apBought = 0; G.today = [];
   G.storyQ = Object.keys(STORY).filter(id => {
     const S = STORY[id];
     return S.day === G.day && !G.storyDone[id] && (!S.cond || S.cond(G.reg[S.arc]));
   });
   G.brokerToday = !!G.reg.broker.flags.partner;
-  G.queue = Math.min(9, 4 + Math.floor(G.rep / 20)) + G.bonusQueue + G.storyQ.length + (G.brokerToday ? 1 : 0);
+  G.eventQ = (G.backlash || []).filter(b => b.due <= G.day);
+  G.backlash = (G.backlash || []).filter(b => b.due > G.day);
+  G.queue = Math.min(9, 4 + Math.floor(G.rep / 20)) + G.bonusQueue + G.storyQ.length + G.eventQ.length + (G.brokerToday ? 1 : 0);
   nextCustomer();
 }
 
 function pickArch() {
-  const w = { student: 3, grandma: 2 + G.rep / 40, reseller: 2, nervous: 1.5 + (100 - G.rep) / 40, ceo: 2, lady: 1.6 };
+  const w = { student: 3, grandma: 2 + G.rep / 40, reseller: 2, nervous: 1.5 + (100 - G.rep) / 40, ceo: 2, lady: 1.6, collector: 1.3, bride: 1.2 };
   let t = Math.random() * Object.values(w).reduce((a, b) => a + b, 0);
   for (const k in w) { t -= w[k]; if (t <= 0) return k; }
   return 'student';
+}
+
+// 최근에 나온 물건일수록 덜 나온다 (직전 3명 안이면 0.1배, 6명 안이면 0.45배)
+function pickItem(list) {
+  const rec = G.recent || (G.recent = []);
+  const w = list.map(k => { const i = rec.lastIndexOf(k); return i < 0 ? 1 : rec.length - i <= 3 ? 0.1 : 0.45; });
+  let t = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < list.length; i++) { t -= w[i]; if (t <= 0) return list[i]; }
+  return list[list.length - 1];
 }
 
 function pickCond() {
@@ -483,46 +665,65 @@ function realOf(it) {
 
 function genCustomer(spec = {}) {
   const ak = spec.arch || pickArch(), A = ARCH[ak];
-  const ik = spec.ik || pick(A.items), I = ITEMS[ik];
+  const ik = spec.ik || pickItem(A.items), I = ITEMS[ik];
+  G.recent = [...(G.recent || []), ik].slice(-8);
   const o = spec.item || {};
   const mode = spec.mode || (Math.random() < A.pawnRate ? 'pawn' : 'sell');
   const fakeP = I.nofake ? 0 : A.fake + (I.fakeBoost || 0);
   const it = { key: ik, name: I.name, e: I.e, gold: !!I.gold, base: I.base,
     fake: o.fake ?? Math.random() < fakeP, stolen: o.stolen ?? Math.random() < A.stolen };
+  it.knew = it.fake && !!A.knowFake; // 알고 속였는지: 사기 신고가 통하는지 가른다
+  if (SPOTS[ik]) {
+    // 가품은 부위마다 티가 날 수도, 잘 베꼈을 수도 있다. 금 외에는 최소 한 곳은 티가 난다.
+    const ids = SPOTS[ik].map(s => s.id);
+    it.tells = Object.fromEntries(ids.map(id => [id, it.fake && Math.random() < (I.gold ? 0.5 : 0.75)]));
+    if (it.fake && !I.gold && !ids.some(id => it.tells[id])) it.tells[pick(ids)] = true;
+    // 정교한 가품(S급 짝퉁): 티가 딱 한 곳만 난다. 가품 장사꾼일수록, 날이 갈수록 많아진다.
+    const premP = (ak === 'reseller' ? 0.45 : ak === 'lady' ? 0.55 : 0.12) + (G.day - 1) * 0.02;
+    if (it.fake && !I.gold && ids.length > 1 && Math.random() < premP) {
+      it.premium = true; const one = pick(ids);
+      ids.forEach(id => { it.tells[id] = id === one; });
+    }
+  }
+  it.lock = it.stolen && ['iphone', 'macbook', 'ipad'].includes(ik) && Math.random() < 0.6;
   let perceived;
   if (I.gold) {
     it.don = o.don ?? RI(...I.don);
-    it.purity = o.purity ?? pick(['14K', '18K', '18K', '24K']);
-    it.claimPurity = it.fake ? pick(['18K', '24K']) : A.honest ? it.purity : '24K';
+    it.purity = o.purity ?? I.purity ?? pick(['14K', '18K', '18K', '24K']);
+    it.claimPurity = it.fake ? I.purity || pick(['18K', '24K']) : A.honest ? it.purity : '24K';
     it.claimDon = A.honest ? it.don : it.don + RI(0, 2);
     perceived = it.claimDon * G.gold * PUR[it.claimPurity];
   } else {
     it.cond = o.cond ?? pickCond();
     const better = CONDS[Math.max(0, CONDS.indexOf(it.cond) - 1)];
     it.claimCond = A.honest ? (Math.random() < 0.7 ? it.cond : better) : 'S';
-    it.real = it.fake ? I.base * R(0.02, 0.05) : I.base * COND[it.cond] * R(0.9, 1.1);
+    it.real = it.fake ? I.base * (it.premium ? R(0.06, 0.1) : R(0.02, 0.05)) : I.base * COND[it.cond] * R(0.9, 1.1);
     perceived = I.base * COND[it.claimCond];
   }
   let ask, min;
   if (mode === 'sell') { ask = perceived * (spec.askF ?? R(1.05, 1.3)); min = perceived * (spec.minF ?? R(...A.desp)); }
   else { ask = perceived * (spec.askF ?? R(0.6, 0.8)); min = perceived * (spec.minF ?? R(...A.desp) * 0.6); }
   ask = Math.max(2, Math.round(ask)); min = Math.max(1, Math.min(ask - 1, Math.round(min)));
-  const p = RI(...A.patience);
+  if (spec.tellsAll && it.tells) for (const k in it.tells) it.tells[k] = true;
+  const p = (spec.patience ?? RI(...A.patience)) + (up('coffee') ? 1 : 0);
   return { arch: ak, name: spec.name || pick(SURN) + pick(ak === 'grandma' ? GIVEN_OLD : GIVEN), item: it, mode, perceived, ask, min, patience: p, maxPatience: p,
     rev: {}, asked: false, status: 'talk', offer: Math.round(ask * 0.5), say: spec.say || pick(A[mode]), mood: '',
     story: spec.story || null, regular: spec.regular || null };
 }
 
 function nextCustomer() {
-  if (G.served >= G.queue) { G.cur = null; G.phase = 'closed'; render(); return; }
+  if (G.served >= G.queue) { G.cur = null; G.phase = 'closed'; UI.scrollTo = 'counter'; render(); return; }
   const remaining = G.queue - G.served;
   G.served++;
-  const special = G.storyQ.length + (G.brokerToday ? 1 : 0);
-  if (special && (remaining <= special || (G.served > 1 && Math.random() < 0.45))) {
+  const special = G.storyQ.length + (G.eventQ || []).length + (G.brokerToday ? 1 : 0);
+  if (G.day === 1 && G.served === 1 && G.tutorial) G.cur = genCustomer(TUTOR());
+  else if (special && (remaining <= special || (G.served > 1 && Math.random() < 0.45))) {
     if (G.storyQ.length) G.cur = spawnStory(G.storyQ.shift());
+    else if ((G.eventQ || []).length) G.cur = refundEvent(G.eventQ.shift());
     else { G.brokerToday = false; G.cur = genCustomer(BROKER_SUPPLY()); }
   } else G.cur = genCustomer();
   G.cur.fresh = true;
+  UI.scrollTo = 'counter';
   render();
 }
 
@@ -530,29 +731,96 @@ const TOOLS = {
   cond:   { label: '상태 확인', cost: 1 },
   price:  { label: '시세 조회', cost: 1 },
   auth:   { label: '정밀 감정', cost: 2 },
+  loupe:  { label: '루페 감정', cost: 1 },
   weigh:  { label: '저울 측정', cost: 1 },
   purity: { label: '순도 검사', cost: 2 },
   origin: { label: '출처 묻기', cost: 0 },
 };
 
+/* ---------- 가게 업그레이드 ---------- */
+const UPGRADES = {
+  uv:     { name: 'UV 감정 램프', cost: 500, desc: '루페로 확대한 부위가 가품이면 형광으로 반응한다' },
+  insure: { name: '가품 보증보험', cost: 400, desc: '밤에 가품으로 판명되면 매입가의 40%를 보상' },
+  shelf:  { name: '넓은 진열장', cost: 300, desc: '물건마다 하루 구매 제안을 2번 받는다' },
+  cctv:   { name: '방범 CCTV', cost: 300, desc: '장물 압수 확률 절반, 출처 묻기와 사기 신고가 더 정확해진다' },
+  tester: { name: '금 테스터기', cost: 250, desc: '순도 검사가 감정력 1, 100% 정확' },
+  coffee: { name: '커피 머신', cost: 150, desc: '모든 손님 인내심 +1' },
+};
+const up = k => !!(G.up && G.up[k]);
+const toolCost = t => t === 'purity' && up('tester') ? 1 : TOOLS[t].cost;
+function buyUpgrade(k) {
+  const U = UPGRADES[k];
+  if (!U || up(k) || G.cash < U.cost || G.phase !== 'night') return;
+  G.cash -= U.cost; G.up = { ...(G.up || {}), [k]: true };
+  log(`<span class="chip y">정비</span><b>${U.name}</b> 설치 <span class="neg">-${won(U.cost)}</span>`);
+  render();
+}
+
+/* ---------- 손실 회복: 급전, 사기 신고, 짝퉁 업자 ---------- */
+// 은행 급전은 500만원씩, 빚(이자 포함) 1,650만원까지. 마지막 날 자동 상환.
+const LOAN = 500, LOAN_RATE = 0.1, DEBT_CAP = 1650, RESCUE_CAP = 2500;
+function borrow() {
+  if ((G.debt || 0) + LOAN * (1 + LOAN_RATE) > DEBT_CAP || G.phase === 'intro' || G.phase === 'end' || G.phase === 'bankrupt') return;
+  G.cash += LOAN; G.debt = (G.debt || 0) + LOAN * (1 + LOAN_RATE);
+  log(`<span class="chip y">급전</span>은행에서 ${won(LOAN)}을 빌렸다 (갚을 돈 +${won(LOAN * (1 + LOAN_RATE))})`);
+  render();
+}
+function repay() {
+  const amt = Math.min(G.debt || 0, Math.max(0, G.cash));
+  if (amt <= 0) return;
+  G.cash -= amt; G.debt -= amt;
+  log(`<span class="chip g">상환</span>빚 ${won(amt)}을 갚았다${G.debt ? ` (남은 빚 ${won(G.debt)})` : ''}`);
+  render();
+}
+function reportFraud(id) {
+  const x = G.inv.find(v => v.id === id); if (!x || !x.exposed || x.reported) return;
+  x.reported = true;
+  if (!x.knew) { log(`<span class="chip y">신고</span>${x.name}: 판 사람도 모르고 가져온 가품이었다. 사기로 볼 수 없다.`); return render(); }
+  if (Math.random() < (up('cctv') ? 0.75 : 0.55)) {
+    const back = Math.round(x.cost * 0.7); G.cash += back; G.inv = G.inv.filter(v => v !== x); G.rep = clamp(G.rep + 3);
+    log(`<span class="chip g">검거</span>${x.name}을(를) 판 사기범이 잡혔다. 피해금 <b class="pos">+${won(back)}</b>, 물건은 증거물로 압수`);
+  } else log(`<span class="chip r">신고</span>${x.name}: 수사했지만 범인을 찾지 못했다.`);
+  render();
+}
+const dumpPrice = x => Math.max(1, Math.round(x.base * (x.premium ? 0.2 : 0.12)));
+function dumpFake(id) {
+  const x = G.inv.find(v => v.id === id); if (!x || !x.exposed || x.gold) return;
+  const price = dumpPrice(x); G.cash += price; G.inv = G.inv.filter(v => v !== x); G.stats.sold++; G.stats.profit += price - x.cost;
+  log(`<span class="chip y">처분</span>${x.name}을(를) 짝퉁 업자에게 넘겼다 <b>${won(price)}</b> <span class="neg">(${won(price - x.cost)})</span>`);
+  render();
+}
+
+// 감정력은 현금으로 살 수 있다. 하루 4번까지, 살수록 비싸진다.
+const AP_BUY_MAX = 4;
+const apPrice = () => 30 + 20 * (G.apBought || 0);
+function buyAP() {
+  const p = apPrice();
+  if ((G.apBought || 0) >= AP_BUY_MAX || G.cash < p || G.phase !== 'day') return;
+  G.cash -= p; G.ap++; G.apBought = (G.apBought || 0) + 1;
+  log(`<span class="chip y">감정력</span>감정력 +1 <span class="neg">-${won(p)}</span>`);
+  render();
+}
+
 function useTool(t) {
-  const c = G.cur, it = c.item, T = TOOLS[t];
-  if (c.status !== 'talk' || G.ap < T.cost) return;
+  const c = G.cur, it = c.item, cost = toolCost(t);
+  if (c.status !== 'talk' || G.ap < cost) return;
   if (t === 'origin' ? c.asked : c.rev[t] !== undefined) return;
-  G.ap -= T.cost;
+  G.ap -= cost;
   c.mood = '';
   if (t === 'cond') c.rev.cond = it.cond;
   if (t === 'price') c.rev.price = [it.base * 0.9, it.base * 1.1];
   if (t === 'weigh') c.rev.weigh = it.don;
   if (t === 'auth') c.rev.auth = it.fake ? (Math.random() < 0.9 ? '가품' : '정품') : (Math.random() < 0.95 ? '정품' : '가품');
-  if (t === 'purity') c.rev.purity = it.fake ? (Math.random() < 0.95 ? '도금' : it.claimPurity) : (Math.random() < 0.95 ? it.purity : pick(Object.keys(PUR)));
-  if ((t === 'auth' || t === 'purity') && it.fake && ARCH[c.arch].knowFake) {
+  const acc = up('tester') ? 1 : 0.95;
+  if (t === 'purity') c.rev.purity = it.fake ? (Math.random() < acc ? '도금' : it.claimPurity) : (Math.random() < acc ? it.purity : pick(Object.keys(PUR)));
+  if (t === 'loupe') { c.rev.loupe = []; UI.scrollTo = 'stage'; }
+  if ((t === 'auth' || t === 'purity' || t === 'loupe') && it.fake && ARCH[c.arch].knowFake) {
     c.patience--; c.say = pick(LINES.fakeNervous); c.mood = 'bad';
     if (c.patience <= 0) return walkOut();
   }
   if (t === 'origin') {
     c.asked = true;
-    const nervous = G.perks.sharpEye ? it.stolen : it.stolen ? Math.random() < 0.8 : Math.random() < 0.12;
+    const nervous = G.perks.sharpEye ? it.stolen : it.stolen ? Math.random() < (up('cctv') ? 0.95 : 0.8) : Math.random() < (up('cctv') ? 0.05 : 0.12);
     c.say = nervous ? pick(LINES.stolen) : pick(ARCH[c.arch].origin);
     c.mood = nervous ? 'bad' : '';
   }
@@ -574,8 +842,9 @@ function makeOffer() {
       if (Math.random() < p) return deal(o);
     }
     c.ask = Math.max(c.min, Math.round(c.ask - (c.ask - o) * R(0.25, 0.45)));
-    c.say = fill(pick(c.mode === 'sell' ? LINES.sellCounter : LINES.pawnCounter), c.ask);
-    c.mood = '';
+    const tone = o >= c.min ? 'close' : o >= c.min * 0.85 ? 'near' : 'far';
+    c.say = pick(LINES[tone]) + ' ' + fill(pick(c.mode === 'sell' ? LINES.sellCounter : LINES.pawnCounter), c.ask);
+    c.mood = tone === 'far' ? '' : 'good';
   }
   if (c.patience <= 0) return walkOut();
   render();
@@ -585,6 +854,7 @@ function walkOut() {
   const c = G.cur;
   c.status = 'left'; c.say = pick(LINES.leave); c.mood = 'bad';
   if (c.insulted) { G.rep = clamp(G.rep - 1); }
+  remember(c, 'passed');
   storyFail(c);
   log(`<span class="chip r">결렬</span><b>${c.name}</b> 손님이 ${c.item.name}을(를) 들고 나갔다.`);
   render();
@@ -616,25 +886,36 @@ function deal(price) {
     G.rep = clamp(G.rep + 2);
   }
   c.status = 'deal'; c.say = A.accept; c.mood = 'good'; c.final = price;
+  remember(c, c.mode === 'sell' ? 'bought' : 'pawned', c.mode === 'sell' ? rec.id : rec.no);
   const S = c.story && STORY[c.story];
   if (S && S.onDeal) S.onDeal(G.reg[S.arc], price, rec, c);
   render();
 }
 
+// 밤 정산의 '감정 복기'를 위해 오늘 손에 쥐었거나, 살펴보고 돌려보낸 물건을 적어 둔다
+function remember(c, how, ref) {
+  const it = c.item;
+  if (how === 'passed' && !c.rev.loupe && !c.rev.auth && !c.rev.purity) return;
+  (G.today || (G.today = [])).push({ how, ref, key: it.key, name: it.name, fake: it.fake, premium: !!it.premium, gold: it.gold, tells: it.tells || {}, looked: c.rev.loupe ? [...c.rev.loupe] : null });
+}
+
 function rejectGuest() {
   const c = G.cur; if (c.status !== 'talk') return;
   c.status = 'rejected'; c.say = LINES.reject; c.mood = '';
+  remember(c, 'passed');
   storyFail(c);
   render();
 }
 
+const canAsk = x => x.offerDay !== G.day || (x.offerN || 1) < (up('shelf') ? 2 : 1);
 function askBuyer(id) {
   const x = G.inv.find(v => v.id === id);
-  if (!x || x.offerDay === G.day || G.phase !== 'day' && G.phase !== 'closed') return;
-  x.offerDay = G.day;
+  if (!x || !canAsk(x) || G.phase !== 'day' && G.phase !== 'closed') return;
+  x.offerN = x.offerDay === G.day ? (x.offerN || 1) + 1 : 1; x.offerDay = G.day;
+  x.spotted = false;
   if (x.fake && Math.random() < 0.7) {
     x.offer = Math.max(1, Math.round(realOf(x)));
-    x.offerNote = '구매자가 가품을 알아봤다. 평판 -3';
+    x.offerNote = '구매자가 가품을 알아봤다. 평판 -3'; x.spotted = true;
     G.rep = clamp(G.rep - 3);
   } else {
     x.offer = Math.max(1, Math.round(realOf(x) * R(0.85, 1.25) * (0.92 + G.rep / 600)));
@@ -650,13 +931,46 @@ function sellItem(id, goldShop) {
   if (!price) return;
   G.cash += price; G.inv.splice(i, 1);
   const pf = price - x.cost; G.stats.sold++; G.stats.profit += pf;
+  // 구매자가 못 알아본 가품은 며칠 뒤 환불하러 온다
+  if (!goldShop && x.fake && !x.spotted) (G.backlash || (G.backlash = [])).push({ name: x.name, price, knew: !!x.exposed, due: G.day + RI(2, 3) });
   log(`<span class="chip g">판매</span><b>${x.name}</b> ${won(price)} <span class="${pf >= 0 ? 'pos' : 'neg'}">(${pf >= 0 ? '+' : ''}${won(pf)})</span>${goldShop && x.fake ? ' · 도금이었다' : ''}`);
   render();
 }
 
 function holdItem(id) { const x = G.inv.find(v => v.id === id); if (x) { x.offer = null; render(); } }
 
+function reviewDay() {
+  const out = [], spotName = (k, ids) => ids.map(id => SPOTS[k].find(s => s.id === id).label).join(', ');
+  let fresh = 0;
+  for (const e of G.today || []) {
+    const tellIds = Object.keys(e.tells).filter(id => e.tells[id]);
+    if (e.fake) fresh += unlockDex(e.key, tellIds);
+    if (e.how === 'passed') {
+      out.push(e.fake ? `<span class="chip g">복기</span>돌려보낸 ${e.name}은(는) 역시 가품이었다.${tellIds.length ? ` 단서: ${spotName(e.key, tellIds)}` : ''}`
+        : `<span class="chip y">복기</span>돌려보낸 ${e.name}은(는) 정품이었다. 아까운 물건을 놓쳤다.`);
+      continue;
+    }
+    if (!e.fake) continue;
+    const seen = tellIds.filter(id => e.looked && e.looked.includes(id)), unseen = tellIds.filter(id => !seen.includes(id));
+    const clue = [seen.length ? `보고도 놓친 단서: ${spotName(e.key, seen)}` : '', unseen.length ? `확인 안 한 단서: ${spotName(e.key, unseen)}` : '',
+      !tellIds.length && e.gold ? '순도 검사로만 알 수 있었다' : ''].filter(Boolean).join(' · ');
+    out.push(`<span class="chip r">복기</span>${e.how === 'bought' ? '사들인' : '맡아둔'} ${e.name}은(는) ${e.premium ? '정교한 S급 ' : ''}가품이었다.${clue ? ' ' + clue : ''}`);
+    const t = e.how === 'pawned' ? G.pawns.find(v => v.no === e.ref) : null;
+    const x = e.how === 'bought' ? G.inv.find(v => v.id === e.ref) : t && t.item;
+    if (x) x.exposed = true;
+    if (x && up('insure') && !x.insured) {
+      const pay = Math.round((t ? t.loan : x.cost) * 0.4); x.insured = true; G.cash += pay;
+      out.push(`<span class="chip g">보험</span>가품 보증보험에서 ${won(pay)}을 보상받았다.`);
+    }
+    if (x && e.how === 'bought' && !out.some(l => l.includes('짝퉁 업자'))) out.push('<span class="chip y">팁</span>판명된 가품은 금고에서 <b>사기 신고</b>하거나 <b>짝퉁 업자</b>에게 넘겨 손실을 줄일 수 있다.');
+  }
+  if (fresh) out.push(`<span class="chip g">도감</span>감정 도감에 새 단서 ${fresh}개가 기록됐다.`);
+  G.today = [];
+  return out.length ? ['<b>감정 복기</b>', ...out] : [];
+}
+
 function endDay() {
+  const review = reviewDay();
   const rep = [];
   G.pawns = G.pawns.filter(p => {
     if (p.story || p.due > G.day) return true;
@@ -673,12 +987,23 @@ function endDay() {
   });
   const seize = (name, cost) => { G.rep = clamp(G.rep - 12); G.stats.seized++; G.stats.profit -= cost;
     rep.push(`<span class="chip r">압수</span>경찰 방문. ${name}은(는) 도난품이었다. <b class="neg">-${won(cost)}</b>, 평판 -12`); };
-  G.inv = G.inv.filter(x => { if (x.stolen && Math.random() < 0.3) { seize(x.name, x.cost); return false; } return true; });
-  G.pawns = G.pawns.filter(p => { if (p.item.stolen && Math.random() < 0.3) { seize(p.item.name, p.loan); return false; } return true; });
+  const seizeP = up('cctv') ? 0.15 : 0.3;
+  G.inv = G.inv.filter(x => { if (x.stolen && Math.random() < seizeP) { seize(x.name, x.cost); return false; } return true; });
+  G.pawns = G.pawns.filter(p => { if (p.item.stolen && Math.random() < seizeP) { seize(p.item.name, p.loan); return false; } return true; });
   if (G.day % 7 === 0) { G.cash -= RENT; rep.push(`<span class="chip r">월세</span>가게 월세를 냈다. <b class="neg">-${won(RENT)}</b>`); }
   const old = G.gold; G.gold = Math.round(G.gold * R(0.95, 1.06) * 10) / 10;
   rep.push(`<span class="chip y">금시세</span>내일 1돈 ${old} → <b>${G.gold}</b>만원`);
-  G.report = rep;
+  if (G.cash < 0 && G.day < DAYS) { // 파산 대신 사채: 이자 20%, 빚 2,500만원까지
+    const need = Math.ceil(-G.cash / 100) * 100;
+    if ((G.debt || 0) + need * 1.2 <= RESCUE_CAP) {
+      G.cash += need; G.debt = (G.debt || 0) + need * 1.2;
+      rep.push(`<span class="chip r">사채</span>돈이 모자라 사채업자에게 ${won(need)}을 빌렸다. 갚을 돈 +${won(need * 1.2)} (이자 20%)`);
+    }
+  }
+  if (G.day >= DAYS && G.debt) {
+    rep.push(`<span class="chip r">상환</span>빚 ${won(G.debt)}을 갚았다.`); G.cash -= G.debt; G.debtFail = G.cash < 0; G.debt = 0;
+  }
+  G.report = [...rep, ...review];
   G.phase = G.cash < 0 ? 'bankrupt' : G.day >= DAYS ? 'end' : 'night';
   render();
 }
@@ -687,7 +1012,9 @@ function nextDay() { G.day++; G.inv.forEach(x => { x.offer = null; }); startDay(
 
 /* ---------- 3D 감정 패드 ---------- */
 // three.js가 없거나 WebGL이 안 되면 V.ok=false로 남고 이모지로 대체된다.
-const V = { ok: false, key: null, rx: 0, ry: 0.5, drag: null, wear: 0, thumbs: {}, tex: {}, want: null, w: 0, h: 0 };
+const V = { ok: false, key: null, rx: 0, ry: 0.5, rz: 0, drag: null, wear: 0, thumbs: {}, tex: {}, want: null, wantOpt: {}, w: 0, h: 0,
+  spots: [], pins: [], focus: null, loupe: false, building: null, scrLeft: 0 };
+const SCRATCHES = { S: 0, A: 1, B: 2, C: 3 };
 const WEAR = { S: 0, A: 0.06, B: 0.16, C: 0.3 };
 const GOLD_HEX = { '24K': '#f0b233', '18K': '#e6be66', '14K': '#d9bf92' };
 const PI = Math.PI;
@@ -749,10 +1076,37 @@ const TEX = {
     x.fillStyle = '#5a3a22'; x.fillRect(0, 0, w, w);
     x.fillStyle = '#caa56c';
     const flower = (cx, cy, s) => { for (let k = 0; k < 4; k++) { x.beginPath(); x.ellipse(cx + Math.cos(k * PI / 2) * s, cy + Math.sin(k * PI / 2) * s, s * 0.8, s * 0.45, k * PI / 2, 0, 2 * PI); x.fill(); } };
-    flower(64, 64, 14); flower(192, 192, 14);
-    x.beginPath(); x.arc(192, 64, 14, 0, 2 * PI); x.lineWidth = 6; x.strokeStyle = '#caa56c'; x.stroke();
-    x.beginPath(); x.arc(64, 192, 5, 0, 2 * PI); x.fill();
+    monoTile(x, 0, 0, 256, false);
   }, 2.6),
+  scratch: i => canvasTex('scr' + i, 256, 256, (x, w) => {
+    x.lineCap = 'round';
+    for (let k = 0; k < 7; k++) {
+      x.strokeStyle = `rgba(255,255,255,${R(0.35, 0.7)})`; x.lineWidth = R(0.8, 2.2);
+      const sx = R(20, w - 20), sy = R(20, w - 20), a = R(0, 2 * PI), L = R(30, 120);
+      x.beginPath(); x.moveTo(sx, sy); x.quadraticCurveTo(sx + Math.cos(a + 0.3) * L / 2, sy + Math.sin(a + 0.3) * L / 2, sx + Math.cos(a) * L, sy + Math.sin(a) * L); x.stroke();
+    }
+    for (let k = 0; k < 3; k++) { x.fillStyle = 'rgba(255,255,255,.55)'; x.beginPath(); x.arc(R(30, w - 30), R(30, w - 30), R(2, 4), 0, 2 * PI); x.fill(); }
+  }),
+  lockPhone: () => {
+    const t = canvasTex('lockPhone', 256, 544, (x, w, h) => {
+      x.fillStyle = '#07080c'; x.fillRect(0, 0, w, h);
+      x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#f2f2f2'; x.strokeStyle = '#f2f2f2'; x.lineWidth = 7;
+      x.beginPath(); x.arc(w / 2, 170, 24, PI, 0); x.stroke(); x.fillRect(w / 2 - 36, 170, 72, 56);
+      x.font = `700 30px ${KR}`; x.fillText('분실 모드', w / 2, 290);
+      x.font = `20px ${KR}`; x.fillText('이 iPhone은', w / 2, 340); x.fillText('분실 신고되었습니다', w / 2, 368);
+      x.font = `18px ${KR}`; x.fillStyle = '#9aa0aa'; x.fillText('연락처 010-****-2187', w / 2, 420);
+    });
+    t.repeat.set(1 / 0.73, 1 / 1.55); t.offset.set(0.5, 0.5); // ShapeGeometry UV는 좌표 그대로라 0~1로 맞춘다
+    return t;
+  },
+  lockMac: () => canvasTex('lockMac', 512, 320, (x, w, h) => {
+    const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#2a2d34'); g.addColorStop(1, '#121318'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#f2f2f2'; x.strokeStyle = '#f2f2f2'; x.lineWidth = 6;
+    x.beginPath(); x.arc(w / 2, 88, 18, PI, 0); x.stroke(); x.fillRect(w / 2 - 27, 88, 54, 42);
+    x.font = `700 30px ${KR}`; x.fillText('활성화 잠금', w / 2, 175);
+    x.font = `19px ${KR}`; x.fillText('이 Mac은 소유자의 계정으로 잠겨 있습니다', w / 2, 220);
+    x.fillStyle = '#9aa0aa'; x.font = `16px ${KR}`; x.fillText('분실 신고된 기기입니다', w / 2, 256);
+  }),
   leatherette: () => canvasTex('leath', 256, 256, (x, w) => {
     x.fillStyle = '#1b1b1b'; x.fillRect(0, 0, w, w);
     for (let i = 0; i < 2600; i++) { x.fillStyle = `rgba(${Math.random() < 0.5 ? '255,255,255,.06' : '0,0,0,.35'})`; x.fillRect(Math.random() * w, Math.random() * w, 2, 2); }
@@ -803,9 +1157,239 @@ const TEX = {
   }),
 };
 
-function watch(o) {
+/* ---------- 감정 단서: 정품과 가품이 다르게 그려지는 부위 ---------- */
+const KR = '"Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+const SERIF = 'Georgia, "Times New Roman", serif';
+
+function monoTile(x, ox, oy, s, fake) {
+  // 루이비통 모노그램 한 칸(꽃 두 개, 원, LV). 가품은 바탕이 붉고 V가 뒤집혀 있다.
+  x.save(); x.translate(ox, oy); x.scale(s / 256, s / 256);
+  x.fillStyle = fake ? '#7b4527' : '#5a3a22'; x.fillRect(0, 0, 256, 256);
+  x.fillStyle = x.strokeStyle = fake ? '#e7b552' : '#caa56c';
+  const flower = (cx, cy, r) => { for (let k = 0; k < 4; k++) { x.beginPath(); x.ellipse(cx + Math.cos(k * PI / 2) * r, cy + Math.sin(k * PI / 2) * r, r * 0.8, r * 0.45, k * PI / 2, 0, 2 * PI); x.fill(); } };
+  flower(64, 64, 14); flower(192, 192, 14);
+  x.beginPath(); x.arc(192, 64, 14, 0, 2 * PI); x.lineWidth = 6; x.stroke();
+  x.font = `italic 700 46px ${SERIF}`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  if (fake) { x.fillText('L', 50, 192); x.save(); x.translate(80, 192); x.rotate(PI); x.fillText('V', 0, 0); x.restore(); }
+  else x.fillText('LV', 64, 192);
+  x.restore();
+}
+function eng(x, t, px, py, font, ink = 'rgba(30,30,34,.9)', hi = 'rgba(255,255,255,.55)') {
+  x.font = font; x.fillStyle = hi; x.fillText(t, px + 1.5, py + 1.5); x.fillStyle = ink; x.fillText(t, px, py);
+}
+function steelBg(x, w, h, base = '#c3c7cc') {
+  x.fillStyle = base; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < h * 1.2; i++) { x.fillStyle = `rgba(255,255,255,${R(0.02, 0.09)})`; x.fillRect(0, Math.random() * h, w, 1); }
+}
+function noiseBg(x, w, h, base, n = 900) {
+  x.fillStyle = base; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < n; i++) { x.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+}
+function ringText(x, cx, cy, r, text, font, span, jit) {
+  x.font = font; const n = text.length;
+  for (let i = 0; i < n; i++) {
+    const a = -PI / 2 - span / 2 + (i + 0.5) / n * span + (jit ? R(-jit, jit) : 0);
+    x.save(); x.translate(cx, cy); x.rotate(a + PI / 2); x.translate(0, -(r + (jit ? R(-7, 7) : 0)));
+    if (jit) x.scale(R(0.8, 1.2), R(0.8, 1.2));
+    eng(x, text[i], 0, 0, font); x.restore();
+  }
+}
+function spaced(x, text, cx, cy, jit) {
+  const cs = [...text], ws = cs.map(c => x.measureText(c).width), total = ws.reduce((a, b) => a + b, 0);
+  let px = cx - total / 2;
+  cs.forEach((c, i) => {
+    x.save(); x.translate(px + ws[i] / 2, cy + (jit ? R(-jit, jit) : 0)); if (jit) x.rotate(R(-0.13, 0.13));
+    x.fillText(c, 0, 0); x.restore(); px += ws[i];
+  });
+}
+function crown(x, cx, cy, s, n, col) {
+  x.fillStyle = x.strokeStyle = col; x.lineWidth = s * 0.07; x.lineCap = 'round';
+  const by = cy + s * 0.3;
+  x.fillRect(cx - s * 0.42, by, s * 0.84, s * 0.12);
+  for (let k = 0; k < n; k++) {
+    const f = k / (n - 1), a = (f - 0.5) * 1.3, bx = cx + (f - 0.5) * s * 0.7;
+    const tx = cx + Math.sin(a) * s * 0.55, ty = by - Math.cos(a) * s * 0.62 + Math.abs(f - 0.5) * s * 0.15;
+    x.beginPath(); x.moveTo(bx, by); x.lineTo(tx, ty); x.stroke();
+    x.beginPath(); x.arc(tx, ty, s * 0.08, 0, 2 * PI); x.fill();
+  }
+}
+// 가품 인쇄: 살짝 밀리고 기울고 번진다
+function misprint(x, w, h, tell, draw) {
+  x.save(); x.textAlign = 'center'; x.textBaseline = 'middle';
+  if (tell) { x.translate(w * 0.58, h * 0.54); x.rotate(-0.09); x.save(); x.globalAlpha = 0.35; x.translate(4, 3); draw(); x.restore(); }
+  else x.translate(w / 2, h / 2);
+  draw(); x.restore();
+}
+function caseBack(x, w, tell, ring, serial, model) {
+  x.fillStyle = '#c3c7cc'; x.fillRect(0, 0, w, w);
+  for (let r = 4; r < w / 2; r += 2) { x.strokeStyle = `rgba(255,255,255,${R(0.02, 0.12)})`; x.beginPath(); x.arc(w / 2, w / 2, r, 0, 2 * PI); x.stroke(); }
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  ringText(x, w / 2, w / 2, 200, ring, '700 30px Arial, sans-serif', tell ? 1.45 * PI : 2 * PI, tell ? 0.035 : 0);
+  if (tell) { eng(x, 'STAINLESS STEEL', w / 2, w / 2 - 16, '600 26px Arial, sans-serif'); eng(x, 'WATER RESISTANT', w / 2, w / 2 + 22, '600 22px Arial, sans-serif'); }
+  else { eng(x, serial, w / 2, w / 2 - 14, '700 36px "Courier New", monospace'); eng(x, model, w / 2, w / 2 + 30, '600 22px Arial, sans-serif'); }
+}
+function goldMark(x, w, h, tell, it) {
+  const shown = it.fake ? it.claimPurity : it.purity;
+  noiseBg(x, w, h, GOLD_HEX[shown] || GOLD_HEX['18K'], 500);
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  eng(x, shown + (tell ? ' GP' : ''), w / 2, h * 0.42, `700 ${tell ? 40 : 46}px Arial, sans-serif`, 'rgba(70,45,10,.9)', 'rgba(255,240,200,.6)');
+  eng(x, '★', w / 2, h * 0.8, '22px Arial, sans-serif', 'rgba(70,45,10,.8)', 'rgba(255,240,200,.5)');
+}
+
+// w×h 캔버스, alpha면 투명 데칼. f(ctx, w, h, 가품 티가 나는지, 물건)
+const DRAW = {
+  'rolex.dial': { w: 512, h: 256, alpha: true, rough: 0.3, f(x, w, h, t) {
+    const ink = t ? '#e4dbc0' : '#f4f1e8';
+    misprint(x, w, h, t, () => { crown(x, 0, -66, 70, t ? 4 : 5, ink); x.fillStyle = ink; x.font = `700 64px ${SERIF}`; x.fillText('ROLEX', 0, 16); x.font = `22px ${SERIF}`; x.fillText('OYSTER PERPETUAL', 0, 68); });
+  } },
+  'omega.dial': { w: 512, h: 256, alpha: true, rough: 0.3, f(x, w, h, t) {
+    const ink = t ? '#e4dbc0' : '#f4f1e8';
+    misprint(x, w, h, t, () => { x.fillStyle = ink; x.font = `700 70px ${SERIF}`; x.fillText('Ω', 0, -60); x.font = `700 52px ${SERIF}`; x.fillText('OMEGA', 0, 8); x.font = `italic 30px ${SERIF}`; x.fillText('Seamaster', 0, 64); });
+  } },
+  'rolex.back': { w: 512, h: 512, metal: 0.85, rough: 0.32, f: (x, w, h, t) => caseBack(x, w, t, 'ROLEX · OYSTER PERPETUAL · SWISS MADE · ', 'No. 7R4K2190', '116610LN') },
+  'omega.back': { w: 512, h: 512, metal: 0.85, rough: 0.32, f: (x, w, h, t) => caseBack(x, w, t, 'OMEGA · SEAMASTER · PROFESSIONAL · SWISS · ', 'No. 87310942', '2531.80') },
+  'chanel.lock': { w: 256, h: 160, metal: 0.9, rough: 0.22, f(x, w, h, t) {
+    noiseBg(x, w, h, '#e2bf6c', 300);
+    const C = (cx, r, open) => { // open: 1이면 오른쪽, -1이면 왼쪽이 열린 C
+      const a0 = open > 0 ? 0.25 * PI : 1.25 * PI, a1 = open > 0 ? 1.75 * PI : 0.75 * PI;
+      const arc = (lw, col, s = a0, e = a1) => { x.lineWidth = lw; x.strokeStyle = col; x.beginPath(); x.arc(cx, h / 2, r, s, e); x.stroke(); };
+      return arc;
+    };
+    const d = t ? 46 : 22, r = 40;
+    const L = C(w / 2 - d, r, -1), Rr = C(w / 2 + d, t ? r * 0.82 : r, 1);
+    for (const arc of [L, Rr]) { arc(16, '#7d5a1c'); arc(8, '#f6dd94'); }
+    if (!t) { L(16, '#7d5a1c', -0.44 * PI, -0.18 * PI); L(8, '#f6dd94', -0.42 * PI, -0.2 * PI); } // 위쪽 교차에서 왼쪽 C가 위로 지나간다
+  } },
+  'chanel.back': { w: 512, h: 320, rough: 0.55, f(x, w, h, t) {
+    x.fillStyle = '#171717'; x.fillRect(0, 0, w, h);
+    const grid = (off, dash, wobble) => {
+      for (let k = -12; k < 20; k++) for (const dir of [1, -1]) {
+        const b = k * 64 + off;
+        const line = (lw, col, ds) => { x.lineWidth = lw; x.strokeStyle = col; x.setLineDash(ds); x.beginPath();
+          x.moveTo(dir > 0 ? b : b + h, 0); x.lineTo(dir > 0 ? b + h + (wobble ? R(-14, 14) : 0) : b + (wobble ? R(-14, 14) : 0), h); x.stroke(); };
+        line(9, '#050505', []); line(2, 'rgba(255,255,255,.2)', dash);
+      }
+      x.setLineDash([]);
+    };
+    if (!t) return grid(0, [4, 3], false);
+    x.save(); x.beginPath(); x.rect(0, 0, w / 2, h); x.clip(); grid(22, [11, 10], true); x.restore();
+    x.save(); x.beginPath(); x.rect(w / 2, 0, w / 2, h); x.clip(); grid(0, [11, 10], true); x.restore();
+  } },
+  'lv.canvas': { w: 512, h: 288, rough: 0.55, f(x, w, h, t) {
+    x.save(); if (t) { x.translate(w / 2, h / 2); x.rotate(0.1); x.translate(-w / 2, -h / 2); }
+    const s = 200; for (let i = -1; i < 4; i++) for (let j = -1; j < 3; j++) monoTile(x, i * s, j * s, s, t);
+    x.restore();
+  } },
+  'lv.stamp': { w: 512, h: 96, rough: 0.6, f(x, w, h, t) {
+    noiseBg(x, w, h, '#c48e5c', 400);
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#5b391c';
+    x.font = '700 34px "Century Gothic", Futura, Arial, sans-serif'; spaced(x, t ? 'LOUIS VUITON' : 'LOUIS VUITTON', w / 2, 32, t ? 4 : 0);
+    x.font = '22px "Century Gothic", Futura, Arial, sans-serif'; spaced(x, t ? 'PARIS · made in Frence' : 'PARIS · made in France', w / 2, 72, t ? 3 : 0);
+  } },
+  'leica.top': { w: 512, h: 80, metal: 0.85, rough: 0.3, f(x, w, h, t) {
+    steelBg(x, w, h, '#ced1d5'); x.textAlign = 'left'; x.textBaseline = 'middle';
+    eng(x, 'Leica', 26, 42, `italic 700 44px ${SERIF}`); eng(x, 'M6', 160, 42, '700 36px Arial, sans-serif');
+    if (t) eng(x, 'Wetzlar · Germany', 270, 44, '22px Arial, sans-serif');
+    else eng(x, 'No. 1754321', 270, 44, '700 28px "Courier New", monospace');
+  } },
+  'leica.dot': { w: 256, h: 256, rough: 0.35, f(x, w, h, t) {
+    x.fillStyle = '#161616'; x.fillRect(0, 0, w, h);
+    x.fillStyle = t ? '#e4561f' : '#c8102e'; x.beginPath(); x.arc(w / 2, h / 2, w / 2 - 4, 0, 2 * PI); x.fill();
+    x.fillStyle = '#ffffff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `italic 700 ${t ? 58 : 66}px ${SERIF}`;
+    x.fillText('Leica', w / 2 + (t ? 18 : 0), h / 2 + (t ? 14 : 4));
+  } },
+  'guitar.head': { w: 512, h: 160, alpha: true, rough: 0.3, f(x, w, h, t) {
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = `italic 700 96px ${SERIF}`; x.lineWidth = 5; x.strokeStyle = '#c9a24e'; x.strokeText('Fender', w / 2, 62); x.fillStyle = '#111'; x.fillText('Fender', w / 2, 62);
+    if (!t) { x.font = '700 26px Arial, sans-serif'; x.fillText('STRATOCASTER', w / 2, 132); }
+  } },
+  'guitar.plate': { w: 256, h: 300, metal: 0.85, rough: 0.3, f(x, w, h, t) {
+    steelBg(x, w, h);
+    const screws = [[34, 34], [w - 34, 34], [34, h - 34], [w - 34, h - 34]].slice(0, t ? 3 : 4);
+    for (const [sx, sy] of screws) { x.fillStyle = '#8d9197'; x.beginPath(); x.arc(sx, sy, 15, 0, 2 * PI); x.fill(); x.strokeStyle = '#4a4d52'; x.lineWidth = 3; x.beginPath(); x.moveTo(sx - 9, sy); x.lineTo(sx + 9, sy); x.stroke(); }
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    eng(x, 'Fender', w / 2, 112, `italic 700 46px ${SERIF}`);
+    eng(x, t ? 'MADE IN U.S.A.' : 'CORONA, CALIFORNIA', w / 2, 160, '600 18px Arial, sans-serif');
+    if (!t) eng(x, 'US21034567', w / 2, 200, '700 26px "Courier New", monospace');
+  } },
+  'diamond.girdle': { w: 512, h: 64, alpha: true, rough: 0.1, f(x, w, h, t) {
+    if (t) return;
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = 'rgba(70,78,96,.92)'; x.font = '600 34px "Courier New", monospace';
+    x.fillText('GIA 2185471309', w / 2, h / 2);
+  } },
+  'diamond.band': { w: 256, h: 128, metal: 0.9, rough: 0.2, f(x, w, h, t) {
+    steelBg(x, w, h, '#dfe1e5'); x.textAlign = 'center'; x.textBaseline = 'middle';
+    eng(x, t ? 'S925' : 'PT950', w / 2, 52, '700 44px Arial, sans-serif'); eng(x, t ? '1.0' : '1.02ct', w / 2, 98, '600 24px Arial, sans-serif');
+  } },
+  'pen.star': { w: 128, h: 128, rough: 0.2, f(x, w, h, t) {
+    x.fillStyle = '#0b0b0d'; x.fillRect(0, 0, w, h);
+    x.fillStyle = t ? '#efe3c2' : '#f7f6f2'; const c = w / 2;
+    if (t) { x.beginPath(); for (let k = 0; k < 10; k++) { const a = -PI / 2 + k * PI / 5, r = k % 2 ? 20 : 52; x.lineTo(c + Math.cos(a) * r, c + Math.sin(a) * r); } x.fill(); }
+    else { x.beginPath(); x.arc(c, c, 26, 0, 2 * PI); x.fill(); for (let k = 0; k < 6; k++) { const a = k * PI / 3; x.beginPath(); x.arc(c + Math.cos(a) * 34, c + Math.sin(a) * 34, 15, 0, 2 * PI); x.fill(); } }
+  } },
+  'pen.clip': { w: 96, h: 1024, metal: 0.9, rough: 0.25, f(x, w, h, t) {
+    noiseBg(x, w, h, '#e2c06a', 600);
+    x.save(); x.translate(w / 2, h / 2); x.rotate(-PI / 2); x.textAlign = 'center'; x.textBaseline = 'middle';
+    eng(x, t ? 'MONT BLANC' : 'MONTBLANC', -110, 0, '700 54px Arial, sans-serif', 'rgba(70,45,10,.9)', 'rgba(255,240,200,.6)');
+    if (!t) eng(x, 'QA1029384', 280, 0, '600 40px "Courier New", monospace', 'rgba(70,45,10,.9)', 'rgba(255,240,200,.6)');
+    x.restore();
+  } },
+  'celadon.foot': { w: 512, h: 512, rough: 0.85, f(x, w, h, t) {
+    const c = w / 2;
+    x.fillStyle = t ? '#c2bcae' : '#8d7b66'; x.fillRect(0, 0, w, h);
+    if (!t) {
+      for (let i = 0; i < 4500; i++) { const a = R(0, 2 * PI), r = R(0.78, 1) * c; x.fillStyle = pick(['#6d5c49', '#a8957c', '#c9b79d', '#5a4a3a']); x.fillRect(c + Math.cos(a) * r, c + Math.sin(a) * r, R(1, 3.5), R(1, 3.5)); }
+      const n = RI(3, 5), a0 = R(0, 2 * PI);
+      for (let k = 0; k < n; k++) { const a = a0 + k * 2 * PI / n + R(-0.2, 0.2), r = 0.89 * c; x.fillStyle = '#f2ede1'; x.beginPath(); x.ellipse(c + Math.cos(a) * r, c + Math.sin(a) * r, R(12, 17), R(9, 13), a, 0, 2 * PI); x.fill(); }
+    } else {
+      for (let r = 0.78 * c; r < c; r += 3) { x.strokeStyle = `rgba(255,255,255,${R(0.05, 0.18)})`; x.lineWidth = 1; x.beginPath(); x.arc(c, c, r, 0, 2 * PI); x.stroke(); }
+    }
+    x.fillStyle = t ? '#86bca4' : '#6f9282'; x.beginPath(); x.arc(c, c, 0.76 * c, 0, 2 * PI); x.fill();
+    x.strokeStyle = 'rgba(30,45,38,.3)'; x.lineWidth = 1.2;
+    if (!t) for (let i = 0; i < 40; i++) { let px = c + R(-150, 150), py = c + R(-150, 150); x.beginPath(); x.moveTo(px, py); for (let k = 0; k < 4; k++) { px += R(-30, 30); py += R(-30, 30); x.lineTo(px, py); } x.stroke(); }
+  } },
+  'celadon.crackle': { w: 512, h: 512, alpha: true, rough: 0.3, f(x, w, h, t) {
+    if (t) {
+      x.fillStyle = 'rgba(160,230,200,.10)'; x.fillRect(0, 0, w, h);
+      x.strokeStyle = 'rgba(20,40,30,.5)'; x.lineWidth = 1.6;
+      for (let k = 16; k < w; k += 40) { x.beginPath(); x.moveTo(k + R(-2, 2), 0); x.lineTo(k + R(-2, 2), h); x.stroke(); x.beginPath(); x.moveTo(0, k + R(-2, 2)); x.lineTo(w, k + R(-2, 2)); x.stroke(); }
+    } else {
+      x.strokeStyle = 'rgba(25,45,35,.42)'; x.lineWidth = 1.1;
+      for (let i = 0; i < 70; i++) { let px = R(0, w), py = R(0, h); x.beginPath(); x.moveTo(px, py); for (let k = 0; k < 5; k++) { px += R(-40, 40); py += R(-40, 40); x.lineTo(px, py); } x.stroke(); }
+    }
+  } },
+  'gneck.mark': { w: 256, h: 256, metal: 0.9, rough: 0.18, f: (x, w, h, t, it) => goldMark(x, w, h, t, it) },
+  'gring.mark': { w: 256, h: 160, metal: 0.9, rough: 0.18, f: (x, w, h, t, it) => goldMark(x, w, h, t, it) },
+  'gbrace.mark': { w: 320, h: 112, metal: 0.9, rough: 0.18, f: (x, w, h, t, it) => goldMark(x, w, h, t, it) },
+};
+
+// 단서 부위. 3D 모델에 붙고, 루페 모드에서 확대해 볼 수 있도록 V.building에 등록된다.
+function spotTex(it, id, tell) {
+  const D = DRAW[it.key + '.' + id];
+  return canvasTex(['sp', it.key, id, tell ? 1 : 0, it.gold ? (it.fake ? it.claimPurity : it.purity) : ''].join('|'), D.w, D.h, (x, cw, ch) => D.f(x, cw, ch, tell, it));
+}
+function spot(g, it, id, pos, rot, w, h, o = {}) {
+  const D = DRAW[it.key + '.' + id]; if (!D) return null;
+  const tell = !!(it.tells && it.tells[id]);
+  const tex = spotTex(it, id, tell);
+  const geo = o.geo || (o.circle ? new THREE.CircleGeometry(w / 2, 56) : new THREE.PlaneGeometry(w, h));
+  const m = new THREE.MeshStandardMaterial({ map: tex, transparent: !!D.alpha, depthWrite: !D.alpha, metalness: D.metal || 0, roughness: Math.min(1, (D.rough ?? 0.5) + V.wear * 0.5),
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: o.geo ? THREE.DoubleSide : THREE.FrontSide });
+  const me = add(g, geo, m, pos, rot);
+  if (V.building) V.building.push({ id, mesh: me, center: o.center || new THREE.Vector3(), size: o.size || Math.max(w, h) });
+  return me;
+}
+// 상태가 나쁠수록 앞에서부터 흠집 데칼이 붙는다 (S 0곳, A 1곳, B 2곳, C 3곳)
+function wearAt(g, pos, rot, w, h, o = {}) {
+  if (!(V.scrLeft > 0)) return;
+  V.scrLeft--;
+  add(g, o.geo || new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: TEX.scratch(V.scrLeft % 3), transparent: true, depthWrite: false, roughness: 0.4,
+    polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, side: o.geo ? THREE.DoubleSide : THREE.FrontSide }), pos, rot);
+}
+
+function watch(o, it) {
   const g = new THREE.Group(), steel = mat('#dfe2e6', 1, 0.16), brushed = mat('#c8ccd2', 1, 0.36);
-  add(g, cyl(0.62, 0.62, 0.26, 72), steel, [0, 0, 0], [PI / 2, 0, 0]);
+  add(g, cyl(0.62, 0.62, 0.26, 72), steel, [0, 0, -0.012], [PI / 2, 0, 0]);
   add(g, new THREE.TorusGeometry(0.565, 0.075, 24, 96), mat(o.bezel, 0.3, 0.12), [0, 0, 0.14]);
   const marks = mat('#e9e9ea', 1, 0.2);
   for (let i = 0; i < 12; i++) {
@@ -824,6 +1408,10 @@ function watch(o) {
   hand(-1.05, 0.27, 0.05, rim, 0.155); hand(1.05, 0.4, 0.04, rim, 0.165); hand(3.7, 0.44, 0.012, mat(o.second, 0.3, 0.3), 0.175);
   add(g, cyl(0.035, 0.035, 0.03, 20), rim, [0, 0, 0.175], [PI / 2, 0, 0]);
   add(g, cyl(0.5, 0.5, 0.025, 72), new THREE.MeshPhysicalMaterial({ transparent: true, opacity: 0.12, roughness: 0, clearcoat: 1 }), [0, 0, 0.2], [PI / 2, 0, 0]);
+  spot(g, it, 'dial', [0, 0.2, 0.1315], [0, 0, 0], 0.3, 0.15);
+  spot(g, it, 'back', [0, 0, -0.144], [0, PI, 0], 1.1, 1.1, { circle: true, size: 0.8 });
+  wearAt(g, [0.06, -0.05, 0.216], [0, 0, 0], 0.5, 0.5);
+  wearAt(g, [0.1, 0.05, -0.148], [0, PI, 0], 0.7, 0.7);
   add(g, cyl(0.085, 0.085, 0.14, 28), steel, [0.68, 0, 0], [0, 0, PI / 2]);
   for (const sx of [-1, 1]) for (const sy of [-1, 1]) add(g, new THREE.BoxGeometry(0.14, 0.26, 0.17), steel, [sx * 0.3, sy * 0.62, -0.02]);
   for (const sy of [1, -1]) for (let i = 0; i < 5; i++) {
@@ -834,21 +1422,25 @@ function watch(o) {
   return g;
 }
 
-function flapBag() {
+function flapBag(it) {
   const g = new THREE.Group();
   const leather = mat('#1b1b1b', 0, 0.5, { map: TEX.quilt(), bumpMap: TEX.quilt(), bumpScale: 0.035 });
   const gold = mat('#e2bf6c', 1, 0.2);
   add(g, rbox(2.0, 1.3, 0.62, 0.14, 0.05), leather);
   add(g, rbox(2.02, 0.84, 0.08, 0.12, 0.03), leather, [0, 0.23, 0.33]);
   add(g, rbox(0.34, 0.2, 0.05, 0.05, 0.015), gold, [0, -0.14, 0.39]);
-  add(g, rbox(0.16, 0.1, 0.06, 0.04, 0.012), gold, [0, -0.14, 0.42]);
+  spot(g, it, 'lock', [0, -0.14, 0.417], [0, 0, 0], 0.3, 0.18);
+  spot(g, it, 'back', [0, 0, -0.313], [0, PI, 0], 1.76, 1.1, { size: 0.75 });
+  wearAt(g, [0.5, 0.35, 0.374], [0, 0, 0], 0.5, 0.4);
+  wearAt(g, [-0.5, -0.42, 0.313], [0, 0, 0], 0.45, 0.3);
+  wearAt(g, [-0.4, 0.2, -0.318], [0, PI, 0], 0.5, 0.4);
   const curve = new THREE.CatmullRomCurve3([[-0.92, 0.6, 0], [-0.85, 1.3, 0], [-0.45, 1.85, 0], [0, 1.98, 0], [0.45, 1.85, 0], [0.85, 1.3, 0], [0.92, 0.6, 0]].map(p => new THREE.Vector3(...p)));
   chainAlong(g, curve, 46, 0.055, 0.018, gold);
   add(g, new THREE.TubeGeometry(curve, 80, 0.02, 8), mat('#111111', 0, 0.6));
   return g;
 }
 
-function speedy() {
+function speedy(it) {
   const g = new THREE.Group();
   const canvas = mat('#ffffff', 0, 0.55, { map: TEX.monogram() });
   const vachetta = mat('#c48e5c', 0, 0.55), gold = mat('#d9b25f', 1, 0.22);
@@ -862,10 +1454,14 @@ function speedy() {
   add(g, new THREE.BoxGeometry(1.7, 0.02, 0.05), gold, [0, 0.545, 0]);
   add(g, rbox(0.16, 0.2, 0.08, 0.04, 0.015), gold, [0.42, 0.18, 0.52]);
   add(g, new THREE.TorusGeometry(0.055, 0.015, 8, 20, PI), gold, [0.42, 0.29, 0.52]);
+  spot(g, it, 'canvas', [-0.3, -0.12, 0.478], [0, 0, 0], 0.9, 0.5);
+  spot(g, it, 'stamp', [0, 0.47, 0.492], [0, 0, 0], 0.48, 0.09, { size: 0.36 });
+  wearAt(g, [0.55, -0.25, 0.479], [0, 0, 0], 0.5, 0.35);
+  wearAt(g, [0, -0.1, -0.478], [0, PI, 0], 0.6, 0.4);
   return g;
 }
 
-function laptop() {
+function laptop(it) {
   const g = new THREE.Group(), al = mat('#a3a7ae', 1, 0.3);
   add(g, rbox(2.3, 1.55, 0.09, 0.08, 0.02), al, [0, 0, 0], [-PI / 2, 0, 0]);
   add(g, new THREE.PlaneGeometry(1.95, 0.72), mat('#ffffff', 0, 0.6, { map: TEX.keys() }), [0, 0.047, -0.2], [-PI / 2, 0, 0]);
@@ -873,14 +1469,17 @@ function laptop() {
   const lid = new THREE.Group(); lid.position.set(0, 0.045, -0.77); lid.rotation.x = -0.3; g.add(lid);
   add(lid, rbox(2.3, 1.5, 0.06, 0.08, 0.02), al, [0, 0.75, 0]);
   add(lid, new THREE.ShapeGeometry(rrShape(2.24, 1.44, 0.07)), mat('#050505', 0, 0.2), [0, 0.75, 0.031]);
-  add(lid, new THREE.PlaneGeometry(2.08, 1.3), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: TEX.screen(), roughness: 0.1 }), [0, 0.76, 0.032]);
+  add(lid, new THREE.PlaneGeometry(2.08, 1.3), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: it && it.lock ? TEX.lockMac() : TEX.screen(), roughness: 0.1 }), [0, 0.76, 0.032]);
+  wearAt(lid, [0.3, 0.75, -0.032], [0, PI, 0], 0.8, 0.6);
+  wearAt(g, [0.55, 0.049, 0.45], [-PI / 2, 0, 0], 0.5, 0.3);
+  wearAt(lid, [-0.4, 0.9, 0.034], [0, 0, 0], 0.6, 0.4);
   return g;
 }
 
-function phone() {
+function phone(it) {
   const g = new THREE.Group(), ti = mat('#55575c', 1, 0.32), glass = gloss('#0c0d10', 0.05);
   add(g, rbox(0.78, 1.6, 0.09, 0.13, 0.025), ti);
-  add(g, new THREE.ShapeGeometry(rrShape(0.73, 1.55, 0.11)), new THREE.MeshStandardMaterial({ color: 0x050507, emissive: 0xffffff, emissiveMap: TEX.screen(), emissiveIntensity: 0.85, roughness: 0.05 }), [0, 0, 0.047]);
+  add(g, new THREE.ShapeGeometry(rrShape(0.73, 1.55, 0.11)), new THREE.MeshStandardMaterial({ color: 0x050507, emissive: 0xffffff, emissiveMap: it && it.lock ? TEX.lockPhone() : TEX.screen(), emissiveIntensity: 0.85, roughness: 0.05 }), [0, 0, 0.047]);
   add(g, new THREE.ShapeGeometry(rrShape(0.2, 0.055, 0.027)), mat('#000000', 0, 0.2), [0, 0.68, 0.048]);
   add(g, rbox(0.36, 0.36, 0.04, 0.09, 0.012), mat('#4a4c51', 0.8, 0.25), [-0.17, 0.56, -0.06]);
   for (const [x, y] of [[-0.26, 0.65], [-0.26, 0.47], [-0.08, 0.56]]) {
@@ -888,6 +1487,9 @@ function phone() {
     add(g, cyl(0.05, 0.05, 0.042, 32), glass, [x, y, -0.092], [PI / 2, 0, 0]);
   }
   add(g, rbox(0.03, 0.18, 0.04, 0.012, 0.008), ti, [0.395, 0.3, 0]);
+  wearAt(g, [0.1, -0.25, 0.049], [0, 0, 0], 0.5, 0.7);
+  wearAt(g, [0.1, -0.3, -0.047], [0, PI, 0], 0.5, 0.6);
+  wearAt(g, [-0.1, 0.2, 0.049], [0, 0, 0], 0.4, 0.4);
   return g;
 }
 
@@ -905,10 +1507,13 @@ function console_() {
       add(g, cyl(0.03, 0.03, 0.03, 16), dark, [sx * 0.96 + Math.cos(a) * 0.075, -sy + Math.sin(a) * 0.075, 0.075], [PI / 2, 0, 0]);
     }
   }
+  wearAt(g, [0.2, 0.1, 0.0525], [0, 0, 0], 0.6, 0.4);
+  wearAt(g, [-0.96, -0.25, 0.067], [0, 0, 0], 0.25, 0.3);
+  wearAt(g, [0, 0, -0.052], [0, PI, 0], 0.9, 0.6);
   return g;
 }
 
-function camera() {
+function camera(it) {
   const g = new THREE.Group(), chrome = mat('#d3d6da', 1, 0.18), blackM = mat('#161616', 0.8, 0.35);
   add(g, rbox(1.7, 0.56, 0.48, 0.2, 0.03), mat('#ffffff', 0, 0.75, { map: TEX.leatherette(), bumpMap: TEX.leatherette(), bumpScale: 0.02 }), [0, -0.12, 0]);
   add(g, rbox(1.7, 0.34, 0.46, 0.15, 0.03), chrome, [0, 0.3, 0]);
@@ -925,10 +1530,15 @@ function camera() {
   add(g, cyl(0.13, 0.13, 0.1, 40), chrome, [-0.55, 0.51, 0]);
   add(g, new THREE.BoxGeometry(0.3, 0.03, 0.2), chrome, [0, 0.48, 0]);
   for (const sx of [-1, 1]) add(g, new THREE.TorusGeometry(0.04, 0.012, 8, 20), chrome, [sx * 0.86, 0.3, 0], [0, PI / 2, 0]);
+  spot(g, it, 'dot', [0.6, 0.06, 0.243], [0, 0, 0], 0.13, 0.13, { circle: true });
+  spot(g, it, 'top', [0, 0.472, 0.165], [-PI / 2, 0, 0], 0.62, 0.097);
+  wearAt(g, [-0.45, -0.2, 0.243], [0, 0, 0], 0.45, 0.25);
+  wearAt(g, [-0.3, 0.473, -0.05], [-PI / 2, 0, 0], 0.35, 0.25);
+  wearAt(g, [0, -0.1, -0.243], [0, PI, 0], 0.8, 0.4);
   return g;
 }
 
-function guitar() {
+function guitar(it) {
   const outer = new THREE.Group(), g = new THREE.Group(); outer.add(g); g.rotation.z = -0.5;
   const body = gloss('#b3541e', 0.18), pg = mat('#f4efe4', 0, 0.35), chrome = mat('#dcdfe3', 1, 0.15), maple = gloss('#e5c38b', 0.3);
   const ell = (cx, cy, rx, ry, depth, m, z) => {
@@ -948,10 +1558,15 @@ function guitar() {
   add(g, rbox(0.34, 0.6, 0.05, 0.13, 0.015), maple, [0.07, 2.65, 0.07]);
   for (let k = 0; k < 6; k++) add(g, cyl(0.025, 0.025, 0.08, 14), chrome, [-0.06, 2.42 + k * 0.09, 0.12], [PI / 2, 0, 0]);
   for (let k = 0; k < 6; k++) add(g, cyl(0.004, 0.004, 3.05, 6), chrome, [-0.065 + k * 0.026, 0.88, 0.15]);
+  spot(g, it, 'head', [0.13, 2.68, 0.097], [0, 0, PI / 2], 0.38, 0.12);
+  spot(g, it, 'plate', [0, 0.6, -0.113], [0, PI, 0], 0.22, 0.26);
+  wearAt(g, [-0.42, -0.62, 0.114], [0, 0, 0], 0.4, 0.3);
+  wearAt(g, [0.3, -0.45, -0.114], [0, PI, 0], 0.5, 0.4);
+  wearAt(g, [0, 1.3, 0.122], [0, 0, 0], 0.2, 0.5);
   return outer;
 }
 
-function diamondRing() {
+function diamondRing(it) {
   const g = new THREE.Group(), plat = mat('#e8eaed', 1, 0.1);
   add(g, new THREE.TorusGeometry(0.55, 0.065, 28, 96), plat);
   add(g, cyl(0.1, 0.07, 0.14, 32), plat, [0, 0.64, 0]);
@@ -959,12 +1574,16 @@ function diamondRing() {
   const stone = new THREE.MeshStandardMaterial({ color: lin('#f6f8ff'), metalness: 1, roughness: 0.02, flatShading: true });
   add(g, cyl(0.25, 0.0, 0.26, 16), stone, [0, 0.8, 0]);
   add(g, cyl(0.16, 0.25, 0.09, 16), stone, [0, 0.975, 0]);
+  spot(g, it, 'girdle', [0, 0.925, 0.262], [0, 0, 0], 0.2, 0.025, { size: 0.13 });
+  spot(g, it, 'band', [0, -0.476, 0], [-PI / 2, 0, 0], 0.16, 0.08);
+  wearAt(g, [0, -0.618, 0], [PI / 2, 0, 0], 0.14, 0.1);
   return g;
 }
 
 function twinRings(it) {
   const g = new THREE.Group(), gold = mat(GOLD_HEX[it.fake ? it.claimPurity : it.purity] || GOLD_HEX['18K'], 1, 0.14);
-  add(g, new THREE.TorusGeometry(0.46, 0.11, 32, 110), gold, [-0.2, 0, 0], [0.35, 0.45, 0]);
+  const r1 = add(g, new THREE.TorusGeometry(0.46, 0.11, 32, 110), gold, [-0.2, 0, 0], [0.35, 0.45, 0]);
+  spot(r1, it, 'mark', [-0.574, 0, 0], [0, -PI / 2, 0], 0.12, 0.075);
   add(g, new THREE.TorusGeometry(0.46, 0.11, 32, 110), gold, [0.2, -0.02, 0.06], [-0.25, -0.55, 0.1]);
   return g;
 }
@@ -979,6 +1598,7 @@ function necklace(it) {
   add(g, cyl(0.17, 0.17, 0.04, 48), gold, [0, -1.42, 0], [PI / 2, 0, 0]);
   add(g, new THREE.TorusGeometry(0.17, 0.02, 12, 48), gold, [0, -1.42, 0]);
   add(g, new THREE.TorusGeometry(0.09, 0.012, 10, 40), gold, [0, -1.42, 0.022]);
+  spot(g, it, 'mark', [0, -1.42, -0.021], [0, PI, 0], 0.26, 0.26, { circle: true });
   return outer;
 }
 
@@ -987,11 +1607,12 @@ function bracelet(it) {
   const gold = mat(GOLD_HEX[it.fake ? it.claimPurity : it.purity] || GOLD_HEX['18K'], 1, 0.14);
   const pts = []; for (let k = 0; k < 16; k++) { const a = k / 16 * 2 * PI; pts.push(new THREE.Vector3(Math.cos(a) * 0.75, 0, Math.sin(a) * 0.75)); }
   chainAlong(g, new THREE.CatmullRomCurve3(pts, true), 30, 0.11, 0.036, gold);
-  add(g, rbox(0.12, 0.1, 0.26, 0.03, 0.015), gold, [0.78, 0, 0], [0, 0, 0]);
+  add(g, rbox(0.14, 0.12, 0.3, 0.03, 0.015), gold, [0.86, 0, 0], [0, 0, 0]);
+  spot(g, it, 'mark', [0.932, 0, 0], [0, PI / 2, 0], 0.22, 0.077);
   return outer;
 }
 
-function pen() {
+function pen(it) {
   const outer = new THREE.Group(), g = new THREE.Group(); outer.add(g); g.rotation.z = 0.95;
   const resin = gloss('#0b0b0d', 0.08), gold = mat('#e2c06a', 1, 0.18);
   add(g, cyl(0.085, 0.07, 1.2, 48), resin, [0, -0.2, 0]);
@@ -1003,37 +1624,457 @@ function pen() {
   add(cap, cyl(0.095, 0.092, 0.95, 48), resin);
   for (const y of [-0.43, -0.4, -0.37]) add(cap, new THREE.TorusGeometry(0.095, 0.009, 8, 40), gold, [0, y, 0], [PI / 2, 0, 0]);
   add(cap, new THREE.SphereGeometry(0.093, 32, 16, 0, 2 * PI, 0, PI / 2), resin, [0, 0.475, 0]);
-  add(cap, cyl(0.035, 0.035, 0.012, 6), mat('#f6f4ee', 0, 0.3), [0, 0.565, 0]);
+  spot(cap, it, 'star', [0, 0.572, 0], [-PI / 2, 0, 0], 0.075, 0.075, { circle: true });
   add(cap, rbox(0.06, 0.78, 0.03, 0.025, 0.01), gold, [0, 0.05, 0.115]);
   add(cap, new THREE.SphereGeometry(0.03, 16, 12), gold, [0, -0.33, 0.12]);
+  spot(cap, it, 'clip', [0, 0.08, 0.132], [0, 0, 0], 0.045, 0.48);
+  wearAt(g, [0, -0.3, 0.08], [0, 0, 0], 0.06, 0.4);
+  wearAt(cap, [Math.sin(PI / 3) * 0.098, -0.1, Math.cos(PI / 3) * 0.098], [0, PI / 3, 0], 0.06, 0.35);
   return outer;
 }
 
-function vase() {
+function vase(it) {
   const g = new THREE.Group();
   const prof = [[0, -1.2], [0.36, -1.2], [0.4, -1.15], [0.38, -0.9], [0.42, -0.5], [0.55, 0], [0.68, 0.45], [0.66, 0.7], [0.5, 0.88], [0.22, 0.98], [0.16, 1.04], [0.2, 1.11], [0.21, 1.18], [0.15, 1.2], [0.13, 1.1]];
   const geo = new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), 120);
   add(g, geo, new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: TEX.celadon(), roughness: 0.35 + V.wear, clearcoat: 0.6, clearcoatRoughness: 0.15 + V.wear, envMapIntensity: 0.6, side: THREE.DoubleSide }));
+  const band = (a, b, k) => prof.slice(a, b).map(p => new THREE.Vector2(p[0] * k, p[1]));
+  spot(g, it, 'foot', [0, -1.203, 0], [PI / 2, 0, 0], 0.71, 0.71, { circle: true });
+  spot(g, it, 'crackle', [0, 0, 0], [0, 0, 0], 0.6, 0.9, { geo: new THREE.LatheGeometry(band(4, 8, 1.006), 16, -0.4, 0.8), center: new THREE.Vector3(0, 0.2, 0.61), size: 0.35 });
+  wearAt(g, [0, 0, 0], [0, 0, 0], 0, 0, { geo: new THREE.LatheGeometry(band(3, 7, 1.01), 12, PI - 0.35, 0.7) });
+  return g;
+}
+
+/* ---------- v0.5 추가 물건 ---------- */
+// 단서가 아닌 장식 데칼 (상자 그림, 반대편 스우시 등)
+function deco(g, tex, pos, rot, w, h, o = {}) {
+  return add(g, o.circle ? new THREE.CircleGeometry(w / 2, 48) : new THREE.PlaneGeometry(w, h),
+    new THREE.MeshStandardMaterial({ map: tex, transparent: !!o.alpha, depthWrite: !o.alpha, roughness: o.rough ?? 0.5, metalness: o.metal || 0,
+      polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }), pos, rot);
+}
+// 좌표가 곧 UV인 지오메트리(Extrude/Shape)에 캔버스를 맞춘다: x0~x1, y0~y1 범위가 텍스처 전체가 되게
+function fitUV(t, x0, x1, y0, y1) { t.repeat.set(1 / (x1 - x0), 1 / (y1 - y0)); t.offset.set(-x0 / (x1 - x0), -y0 / (y1 - y0)); return t; }
+function lockTex(key, w, h, title, l1, l2) {
+  return canvasTex(key, w, h, (x) => {
+    x.fillStyle = '#07080c'; x.fillRect(0, 0, w, h);
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#f2f2f2'; x.strokeStyle = '#f2f2f2'; x.lineWidth = 7;
+    const cy = h * 0.32;
+    x.beginPath(); x.arc(w / 2, cy, 24, PI, 0); x.stroke(); x.fillRect(w / 2 - 36, cy, 72, 56);
+    x.font = `700 30px ${KR}`; x.fillText(title, w / 2, h * 0.55);
+    x.font = `20px ${KR}`; x.fillText(l1, w / 2, h * 0.63);
+    x.font = `18px ${KR}`; x.fillStyle = '#9aa0aa'; x.fillText(l2, w / 2, h * 0.7);
+  });
+}
+Object.assign(TEX, {
+  lockPad: () => lockTex('lockPad', 320, 448, '분실 모드', '이 iPad는 분실 신고되었습니다', '연락처 010-****-5521'),
+  jordanSide: () => fitUV(canvasTex('jordanSide', 640, 366, (x, w, h) => {
+    const P = (px, py) => [(px + 1.05) / 2.1 * w, (1 - (py + 0.05) / 1.2) * h];
+    const poly = (pts, col) => { x.beginPath(); pts.forEach((p, i) => x[i ? 'lineTo' : 'moveTo'](...P(...p))); x.closePath(); x.fillStyle = col; x.fill();
+      x.setLineDash([5, 4]); x.strokeStyle = 'rgba(0,0,0,.45)'; x.lineWidth = 1.5; x.stroke(); x.setLineDash([]); };
+    x.fillStyle = '#f7f5ef'; x.fillRect(0, 0, w, h);
+    const red = '#c8202f', blk = '#151515';
+    poly([[0.5, 0.12], [1.05, 0.12], [1.05, 0.5], [0.72, 0.5], [0.5, 0.3]], red);            // 토캡
+    poly([[-0.2, 1.08], [0.05, 0.78], [0.75, 0.5], [0.85, 0.42], [0.62, 0.36], [-0.05, 0.62], [-0.35, 1.0]], red); // 아이스테이
+    poly([[-1.05, 0.12], [-0.6, 0.12], [-0.55, 0.62], [-0.72, 1.0], [-1.05, 1.0]], red);    // 힐
+    poly([[-0.72, 1.05], [-0.55, 0.66], [-0.3, 0.7], [-0.2, 1.08]], blk);                   // 칼라
+  }), -1.05, 1.05, -0.05, 1.15),
+  abbey: () => fitUV(canvasTex('abbey', 512, 512, (x, w, h) => {
+    const sky = x.createLinearGradient(0, 0, 0, h * 0.55); sky.addColorStop(0, '#7fb4d8'); sky.addColorStop(1, '#cfe3ec');
+    x.fillStyle = sky; x.fillRect(0, 0, w, h * 0.55);
+    x.fillStyle = '#5e7d4a'; for (let i = 0; i < 9; i++) { x.beginPath(); x.arc(i * 64 + R(-10, 10), h * 0.5, R(36, 60), PI, 0); x.fill(); }
+    x.fillStyle = '#6d6d6a'; x.fillRect(0, h * 0.55, w, h * 0.45);
+    x.fillStyle = '#efefe9'; for (let i = 0; i < 7; i++) { x.beginPath(); x.moveTo(i * 80 - 20, h * 0.66); x.lineTo(i * 80 + 30, h * 0.66); x.lineTo(i * 80 + 10, h * 0.92); x.lineTo(i * 80 - 50, h * 0.92); x.fill(); }
+    ['#f2f0ea', '#1c1c1c', '#2b2b2b', '#3c5a8a'].forEach((c, i) => {
+      const cx = 110 + i * 92, top = h * 0.5; x.fillStyle = c; x.strokeStyle = c; x.lineWidth = 9; x.lineCap = 'round';
+      x.beginPath(); x.arc(cx, top, 11, 0, 2 * PI); x.fill();
+      x.beginPath(); x.moveTo(cx, top + 10); x.lineTo(cx, top + 70); x.moveTo(cx, top + 70); x.lineTo(cx - 18, top + 120); x.moveTo(cx, top + 70); x.lineTo(cx + 20, top + 118);
+      x.moveTo(cx, top + 25); x.lineTo(cx - 16, top + 62); x.moveTo(cx, top + 25); x.lineTo(cx + 16, top + 60); x.stroke();
+    });
+  }), -0.8, 0.8, -0.8, 0.8),
+  grooves: () => canvasTex('grooves', 512, 512, (x, w) => {
+    x.fillStyle = '#0c0c0d'; x.fillRect(0, 0, w, w);
+    for (let r = 80; r < w / 2; r += 1.5) { x.strokeStyle = `rgba(255,255,255,${R(0.01, 0.06)})`; x.beginPath(); x.arc(w / 2, w / 2, r, 0, 2 * PI); x.stroke(); }
+    x.strokeStyle = 'rgba(0,0,0,.9)'; x.lineWidth = 3; for (const r of [150, 190, 222]) { x.beginPath(); x.arc(w / 2, w / 2, r, 0, 2 * PI); x.stroke(); }
+  }),
+  porcelain: () => canvasTex('porcelain', 1024, 512, (x, w, h) => {
+    x.fillStyle = '#ede5d3'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 40; i++) { const g = x.createRadialGradient(R(0, w), R(0, h), 0, R(0, w), R(0, h), R(40, 140)); g.addColorStop(0, 'rgba(214,200,170,.25)'); g.addColorStop(1, 'rgba(214,200,170,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); }
+    for (let i = 0; i < 70; i++) { x.fillStyle = `rgba(120,85,50,${R(0.2, 0.5)})`; x.beginPath(); x.arc(R(0, w), R(0, h), R(0.8, 2.2), 0, 2 * PI); x.fill(); }
+  }),
+  hexShell: () => canvasTex('hexShell', 512, 256, (x, w, h) => {
+    x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h); x.strokeStyle = '#555'; x.lineWidth = 6;
+    const r = 30;
+    for (let row = -1; row < 6; row++) for (let col = -1; col < 11; col++) {
+      const cx = col * r * 1.75 + (row % 2 ? r * 0.87 : 0), cy = row * r * 1.5;
+      x.beginPath(); for (let k = 0; k < 6; k++) { const a = PI / 6 + k * PI / 3; x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } x.closePath(); x.stroke();
+    }
+  }),
+  falcon: () => canvasTex('falcon', 640, 420, (x, w, h) => {
+    const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#0b1020'); g.addColorStop(1, '#22304e'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 160; i++) { x.fillStyle = `rgba(255,255,255,${R(0.3, 0.9)})`; x.fillRect(R(0, w), R(0, h), 1.5, 1.5); }
+    x.save(); x.translate(w * 0.56, h * 0.5); x.rotate(-0.25); x.scale(1, 0.55);
+    x.fillStyle = '#b9bcc0'; x.beginPath(); x.arc(0, 0, 150, 0, 2 * PI); x.fill();
+    x.fillRect(110, -60, 110, 42); x.fillRect(110, 18, 110, 42);
+    x.strokeStyle = '#8b8f95'; x.lineWidth = 4; for (const r of [40, 95, 130]) { x.beginPath(); x.arc(0, 0, r, 0, 2 * PI); x.stroke(); }
+    x.fillStyle = '#9aa0a6'; x.fillRect(-40, 120, 90, 50); x.restore();
+    x.textAlign = 'left'; x.textBaseline = 'alphabetic'; x.fillStyle = '#f4f4f4'; x.font = '700 40px Arial, sans-serif'; x.fillText('MILLENNIUM FALCON', 30, h - 34);
+    x.textAlign = 'right'; x.font = '700 34px Arial, sans-serif'; x.fillText('75192', w - 28, 54); x.font = '22px Arial, sans-serif'; x.fillText('7541 pcs · 16+', w - 28, 84);
+  }),
+});
+
+Object.assign(DRAW, {
+  'cartier.dial': { w: 464, h: 640, rough: 0.4, f(x, w, h, t) {
+    x.fillStyle = '#f6f2e8'; x.fillRect(0, 0, w, h);
+    x.strokeStyle = '#222'; x.lineWidth = 2; x.strokeRect(30, 30, w - 60, h - 60); x.strokeRect(40, 40, w - 80, h - 80);
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#151515';
+    const nums = ['XII', 'I', 'II', 'III', t ? 'IV' : 'IIII', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
+    nums.forEach((n, k) => {
+      const a = k / 12 * 2 * PI, dx = Math.sin(a), dy = -Math.cos(a), hw = w / 2 - 92, hh = h / 2 - 92;
+      const s = Math.min(hw / Math.max(0.001, Math.abs(dx)), hh / Math.max(0.001, Math.abs(dy)));
+      x.save(); x.translate(w / 2 + dx * s, h / 2 + dy * s); x.scale(0.8, 1.35); x.font = `700 46px ${SERIF}`; x.fillText(n, 0, 0); x.restore();
+    });
+    x.font = `italic 700 48px ${SERIF}`; x.fillText('Cartier', w / 2 + (t ? 10 : 0), h * 0.36);
+    if (!t) { x.font = '600 15px Arial, sans-serif'; x.fillText('SWISS MADE', w / 2, h - 52); }
+  } },
+  'cartier.back': { w: 384, h: 512, metal: 0.85, rough: 0.32, f(x, w, h, t) {
+    steelBg(x, w, h);
+    for (const [sx, sy] of [[34, 34], [w - 34, 34], [34, h - 34], [w - 34, h - 34]]) { x.fillStyle = '#8d9197'; x.beginPath(); x.arc(sx, sy, 13, 0, 2 * PI); x.fill(); x.strokeStyle = '#4a4d52'; x.lineWidth = 3; x.beginPath(); x.moveTo(sx - 8, sy); x.lineTo(sx + 8, sy); x.stroke(); }
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    const lines = t ? [['CARTIER', 40], ['STAINLESS STEEL BACK', 20], ['WATER RESISTANT', 20]] : [['CARTIER', 40], ['TANK MUST · 4323', 22], ['No. 812345CE', 28], ['SWISS MADE', 18]];
+    lines.forEach(([s, sz], i) => eng(x, s, w / 2, 150 + i * 62, `700 ${sz}px Arial, sans-serif`));
+  } },
+  'hermes.lock': { w: 256, h: 256, metal: 0.9, rough: 0.22, f(x, w, h, t) {
+    noiseBg(x, w, h, '#e2bf6c', 400); x.textAlign = 'center'; x.textBaseline = 'middle';
+    eng(x, 'HERMES', w / 2, h * 0.42, '700 44px Arial, sans-serif', 'rgba(70,45,10,.9)', 'rgba(255,240,200,.6)');
+    if (!t) eng(x, '105', w / 2, h * 0.75, '700 34px Arial, sans-serif', 'rgba(70,45,10,.9)', 'rgba(255,240,200,.6)');
+  } },
+  'hermes.stamp': { w: 448, h: 128, rough: 0.6, f(x, w, h, t) {
+    noiseBg(x, w, h, '#a8673a', 400); x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#ecd08a';
+    x.font = `700 38px ${SERIF}`; spaced(x, t ? 'HERMES' : 'HERMÈS', w / 2, 38, t ? 4 : 0);
+    x.font = `22px ${SERIF}`; spaced(x, 'PARIS', w / 2, 76, t ? 3 : 0); spaced(x, 'MADE IN FRANCE', w / 2, 106, t ? 3 : 0);
+  } },
+  'airpods.serial': { w: 384, h: 256, rough: 0.9, f(x, w, h, t) {
+    noiseBg(x, w, h, '#34353a', 1200); x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#c9cacd';
+    x.font = '22px Arial, sans-serif'; x.fillText(t ? 'Designed by Apple in Califomia' : 'Designed by Apple in California', w / 2, 70);
+    x.fillText('Assembled in China · Model A2096', w / 2, 112);
+    if (!t) { x.font = '600 24px "Courier New", monospace'; x.fillText('Serial H4KXQ2L1JV1Q', w / 2, 170); }
+  } },
+  'airpods.mesh': { w: 256, h: 320, rough: 0.95, f(x, w, h, t) {
+    x.fillStyle = '#3b3c40'; x.fillRect(0, 0, w, h);
+    const s = t ? 16 : 4; x.fillStyle = t ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.12)';
+    if (t) { x.strokeStyle = 'rgba(0,0,0,.6)'; x.lineWidth = 3; for (let k = 0; k < w + h; k += s) { x.beginPath(); x.moveTo(k, 0); x.lineTo(k, h); x.moveTo(0, k); x.lineTo(w, k); x.stroke(); } }
+    else for (let yy = 0; yy < h; yy += s) for (let xx = (yy / s) % 2 ? 2 : 0; xx < w; xx += s) x.fillRect(xx, yy, 2, 2);
+  } },
+  'jordan.swoosh': { w: 512, h: 256, alpha: true, rough: 0.5, f(x, w, h, t) {
+    x.beginPath();
+    if (t) { x.moveTo(40, 140); x.quadraticCurveTo(45, 228, 150, 214); x.lineTo(465, 120); x.lineTo(140, 150); x.quadraticCurveTo(90, 160, 40, 140); }
+    else { x.moveTo(40, 150); x.quadraticCurveTo(50, 225, 140, 212); x.lineTo(470, 70); x.lineTo(150, 168); x.quadraticCurveTo(95, 182, 40, 150); }
+    x.closePath(); x.fillStyle = '#121212'; x.fill();
+    x.setLineDash(t ? [12, 11] : [5, 4]); x.strokeStyle = 'rgba(255,255,255,.45)'; x.lineWidth = 2; x.stroke(); x.setLineDash([]);
+  } },
+  'jordan.wings': { w: 256, h: 200, alpha: true, rough: 0.5, f(x, w, h, t) {
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#ece9e1'; // 검은 칼라 위에 찍힌다
+    x.font = '700 30px Arial, sans-serif'; x.fillText(t ? 'AIR JORDAN' : 'AIR JORDAN™', w / 2, 40);
+    const bx = w / 2 + (t ? 22 : 0), by = 118;
+    const wing = (dir, k) => { x.beginPath(); x.moveTo(w / 2, by + 6); for (let i = 0; i < 4; i++) x.lineTo(w / 2 + dir * (40 + i * 22) * k, by - 34 + i * 14); x.lineTo(w / 2 + dir * 30, by + 30); x.closePath(); x.fill(); };
+    wing(-1, 1); wing(1, t ? 0.75 : 1);
+    x.fillStyle = '#f7f5ef'; x.beginPath(); x.arc(bx, by, 26, 0, 2 * PI); x.fill(); x.strokeStyle = '#111'; x.lineWidth = 4; x.stroke();
+    x.beginPath(); x.moveTo(bx - 26, by); x.lineTo(bx + 26, by); x.moveTo(bx, by - 26); x.lineTo(bx, by + 26); x.stroke();
+  } },
+  'lp.label': { w: 256, h: 256, rough: 0.5, f(x, w, h, t) {
+    x.fillStyle = '#111'; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#121212'; x.beginPath(); x.arc(w / 2, h / 2, w / 2, 0, 2 * PI); x.fill();
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#d8b54c';
+    x.font = '700 20px Arial, sans-serif'; x.fillText('PARLOPHONE', w / 2, 48);
+    x.font = '700 24px Arial, sans-serif'; x.fillText('THE BEATLES', w / 2, 168); x.font = '20px Arial, sans-serif'; x.fillText('ABBEY ROAD', w / 2, 194);
+    x.font = '16px Arial, sans-serif'; x.fillText(`PCS 7088 · ℗ ${t ? '2019' : '1969'}`, w / 2, 218);
+    x.fillStyle = '#000'; x.beginPath(); x.arc(w / 2, h / 2, 9, 0, 2 * PI); x.fill();
+  } },
+  'lp.runout': { w: 512, h: 96, alpha: true, rough: 0.4, f(x, w, h, t) {
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = 'rgba(200,200,205,.85)';
+    if (t) { x.font = '600 40px Arial, sans-serif'; x.fillText('YEX 749-3', w / 2, h / 2); }
+    else { x.font = `italic 44px ${SERIF}`; spaced(x, 'YEX 749-1', w / 2, h / 2, 5); }
+  } },
+  'moonjar.seam': { w: 512, h: 256, alpha: true, rough: 0.4, f(x, w, h, t) {
+    if (t) return;
+    x.strokeStyle = 'rgba(160,138,100,.6)'; x.lineWidth = 3; x.beginPath();
+    for (let px = 0; px <= w; px += 8) x.lineTo(px, h * 0.5 + Math.sin(px / 70) * 10 + px * 0.04 - 10);
+    x.stroke();
+    x.strokeStyle = 'rgba(255,252,240,.5)'; x.lineWidth = 6; x.beginPath();
+    for (let px = 0; px <= w; px += 8) x.lineTo(px, h * 0.5 + Math.sin(px / 70) * 10 + px * 0.04 - 18);
+    x.stroke();
+  } },
+  'moonjar.foot': { w: 512, h: 512, rough: 0.8, f(x, w, h, t) {
+    const c = w / 2;
+    if (t) {
+      x.fillStyle = '#f6f5f0'; x.fillRect(0, 0, w, h);
+      x.strokeStyle = '#2c4f9a'; x.lineWidth = 6; x.strokeRect(c - 70, c - 95, 140, 190); x.lineWidth = 2; x.strokeRect(c - 80, c - 105, 160, 210);
+      x.fillStyle = '#2c4f9a'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = '700 50px "Noto Serif KR", serif';
+      ['大明', '成化', '年製'].forEach((s2, i) => { x.fillText(s2[0], c + 30, c - 60 + i * 60); x.fillText(s2[1], c - 30, c - 60 + i * 60); });
+      return;
+    }
+    x.fillStyle = '#cdbf9f'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 4000; i++) { const a = R(0, 2 * PI), r = R(0.75, 1) * c; x.fillStyle = pick(['#a8957c', '#d8ccb2', '#8f7c62', '#e6dcc6']); x.fillRect(c + Math.cos(a) * r, c + Math.sin(a) * r, R(1, 3.5), R(1, 3.5)); }
+    x.fillStyle = '#ece3cf'; x.beginPath(); x.arc(c, c, 0.73 * c, 0, 2 * PI); x.fill();
+    for (let i = 0; i < 25; i++) { x.fillStyle = 'rgba(120,85,50,.55)'; x.beginPath(); x.arc(c + R(-140, 140), c + R(-140, 140), R(1, 3), 0, 2 * PI); x.fill(); }
+  } },
+  'pearl.card': { w: 512, h: 320, rough: 0.7, f(x, w, h, t) {
+    x.fillStyle = '#fbf9f3'; x.fillRect(0, 0, w, h); x.strokeStyle = '#b89a5a'; x.lineWidth = 4; x.strokeRect(12, 12, w - 24, h - 24);
+    x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillStyle = '#2b2119';
+    x.font = `700 34px ${KR}`; x.fillText('진주 감정서', 36, 56);
+    x.font = `20px ${KR}`; x.fillText(t ? '한국진주감정윈' : '한국진주감정원', 36, 96);
+    [['종류', '아코야 진주'], ['크기', '7.5 – 8.0mm'], ['광택', '상(上)'], ['번호', 'No. 2024-0918']].forEach(([k, v], i) => { x.fillStyle = '#7a6a55'; x.fillText(k, 36, 150 + i * 36); x.fillStyle = '#2b2119'; x.fillText(v, 110, 150 + i * 36); });
+    const hx = w - 100, hy = h - 96;
+    if (t) { x.fillStyle = '#c9c9c9'; x.beginPath(); x.arc(hx, hy, 50, 0, 2 * PI); x.fill(); }
+    else { const g = x.createLinearGradient(hx - 50, hy - 50, hx + 50, hy + 50); ['#ff6b6b', '#ffd93d', '#6bff95', '#6bc8ff', '#c56bff'].forEach((col, i) => g.addColorStop(i / 4, col)); x.fillStyle = g; x.beginPath(); x.arc(hx, hy, 50, 0, 2 * PI); x.fill(); }
+  } },
+  'pearl.clasp': { w: 256, h: 128, metal: 0.9, rough: 0.2, f(x, w, h, t) {
+    noiseBg(x, w, h, t ? '#cfd2d6' : '#e3c46e', 300); x.textAlign = 'center'; x.textBaseline = 'middle';
+    eng(x, t ? '925' : 'K18', w / 2, h / 2, '700 54px Arial, sans-serif', 'rgba(60,45,20,.9)', 'rgba(255,245,215,.6)');
+  } },
+  'lego.logo': { w: 256, h: 196, rough: 0.5, f(x, w, h, t) {
+    x.fillStyle = t ? '#e8501c' : '#d01012'; x.fillRect(0, 0, w, h);
+    if (!t) { x.strokeStyle = '#ffd500'; x.lineWidth = 10; x.strokeRect(5, 5, w - 10, h - 10); }
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `${t ? 700 : 900} 84px "Arial Black", Arial, sans-serif`;
+    if (!t) { x.lineWidth = 14; x.strokeStyle = '#111'; x.strokeText('LEGO', w / 2, h / 2 + 4); x.lineWidth = 7; x.strokeStyle = '#ffd500'; x.strokeText('LEGO', w / 2, h / 2 + 4); }
+    x.fillStyle = '#fff'; x.fillText('LEGO', w / 2, h / 2 + 4);
+    if (!t) { x.font = '700 20px Arial, sans-serif'; x.fillText('®', w - 22, 30); }
+  } },
+  'lego.seal': { w: 128, h: 128, alpha: true, rough: 0.2, f(x, w, h, t) {
+    const c = w / 2;
+    if (t) {
+      x.fillStyle = 'rgba(255,255,255,.35)'; x.beginPath(); x.arc(c - 10, c + 6, 30, 0.6, 3.6); x.fill();
+      x.strokeStyle = 'rgba(30,30,30,.85)'; x.lineWidth = 3; x.beginPath(); x.moveTo(8, c - 6); x.lineTo(w - 8, c + 10); x.stroke();
+      return;
+    }
+    x.fillStyle = 'rgba(255,255,255,.25)'; x.beginPath(); x.arc(c, c, c - 4, 0, 2 * PI); x.fill();
+    x.strokeStyle = 'rgba(255,255,255,.75)'; x.lineWidth = 3; x.stroke();
+    x.fillStyle = 'rgba(80,80,80,.8)'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = '700 18px Arial, sans-serif'; x.fillText('LEGO', c, c);
+  } },
+  'goldbar.mark': { w: 512, h: 256, metal: 0.9, rough: 0.18, f(x, w, h, t) {
+    noiseBg(x, w, h, GOLD_HEX['24K'], 700); x.textAlign = 'center'; x.textBaseline = 'middle';
+    const ink = 'rgba(70,45,10,.9)', hi = 'rgba(255,240,200,.6)';
+    eng(x, 'FINE GOLD', w / 2, 62, '700 44px Arial, sans-serif', ink, hi);
+    eng(x, t ? '999.9 GP' : '999.9', w / 2, 128, '700 60px Arial, sans-serif', ink, hi);
+    if (!t) eng(x, 'No. KR004512', w / 2, 200, '600 30px "Courier New", monospace', ink, hi);
+  } },
+  'turtle.mark': { w: 256, h: 160, metal: 0.9, rough: 0.18, f: (x, w, h, t, it) => goldMark(x, w, h, t, it) },
+});
+
+function tank(it) {
+  const g = new THREE.Group(), gold = mat('#e6c77f', 1, 0.2), strap = mat('#1a1410', 0, 0.75), blue = mat('#1b2f7a', 0.6, 0.3);
+  add(g, rbox(0.78, 1.0, 0.2, 0.08, 0.03), gold);
+  for (const sx of [-1, 1]) add(g, rbox(0.12, 1.16, 0.24, 0.05, 0.02), gold, [sx * 0.42, 0, 0]);
+  for (const sy of [-1, 1]) add(g, rbox(0.56, 0.85, 0.06, 0.04, 0.015), strap, [0, sy * 1.0, -0.03]);
+  spot(g, it, 'dial', [0, 0, 0.103], [0, 0, 0], 0.58, 0.8, { size: 0.62 });
+  const hand = (a, L) => add(g, new THREE.BoxGeometry(0.022, L, 0.006), blue, [Math.sin(a) * L / 2, Math.cos(a) * L / 2, 0.112], [0, 0, -a]);
+  hand(-0.95, 0.2); hand(1.1, 0.3);
+  add(g, cyl(0.03, 0.03, 0.02, 20), blue, [0, 0, 0.112], [PI / 2, 0, 0]);
+  add(g, new THREE.SphereGeometry(0.055, 24, 16), gloss('#1f3fa8', 0.05), [0.54, 0, 0]);
+  add(g, cyl(0.035, 0.035, 0.06, 20), gold, [0.49, 0, 0], [0, 0, PI / 2]);
+  add(g, new THREE.PlaneGeometry(0.6, 0.82), new THREE.MeshPhysicalMaterial({ transparent: true, opacity: 0.1, roughness: 0, clearcoat: 1 }), [0, 0, 0.125]);
+  spot(g, it, 'back', [0, 0, -0.103], [0, PI, 0], 0.6, 0.8, { size: 0.62 });
+  wearAt(g, [0.05, 0.05, 0.127], [0, 0, 0], 0.5, 0.6);
+  wearAt(g, [0, 0, -0.106], [0, PI, 0], 0.55, 0.7);
+  return g;
+}
+
+function birkin(it) {
+  const g = new THREE.Group(), leather = mat('#a8673a', 0, 0.62), gold = mat('#e2bf6c', 1, 0.2);
+  const trap = (b, t2, y0, y1) => { const s = new THREE.Shape(); s.moveTo(-b, y0); s.lineTo(b, y0); s.lineTo(t2, y1); s.lineTo(-t2, y1); s.closePath(); return s; };
+  const body = new THREE.ExtrudeGeometry(trap(0.95, 0.8, -0.6, 0.6), { depth: 0.67, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 3 });
+  body.translate(0, 0, -0.335); add(g, body, leather);
+  const flap = new THREE.ExtrudeGeometry(trap(0.86, 0.8, 0.18, 0.64), { depth: 0.03, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 2 });
+  flap.translate(0, 0, 0.375); add(g, flap, leather);
+  for (const sx of [-1, 1]) add(g, rbox(0.1, 0.32, 0.03, 0.03, 0.01), leather, [sx * 0.42, 0.2, 0.445]);
+  add(g, rbox(0.26, 0.1, 0.03, 0.03, 0.01), gold, [0, 0.12, 0.45]);
+  add(g, rbox(0.18, 0.2, 0.07, 0.04, 0.015), gold, [0, -0.05, 0.48]);
+  add(g, new THREE.TorusGeometry(0.055, 0.014, 10, 24, PI), gold, [0, 0.05, 0.48]);
+  spot(g, it, 'lock', [0, -0.06, 0.517], [0, 0, 0], 0.15, 0.15, { size: 0.13 });
+  for (const sz of [-1, 1]) add(g, new THREE.TorusGeometry(0.3, 0.04, 12, 40, PI), leather, [0, 0.62, sz * 0.2]);
+  add(g, rbox(0.1, 0.22, 0.04, 0.03, 0.01), leather, [0.42, -0.1, 0.42]);
+  spot(g, it, 'stamp', [0, -0.4, 0.378], [0, 0, 0], 0.42, 0.12, { size: 0.3 });
+  wearAt(g, [-0.45, -0.3, 0.379], [0, 0, 0], 0.4, 0.3);
+  wearAt(g, [0, 0, -0.378], [0, PI, 0], 0.6, 0.5);
+  wearAt(g, [0.5, -0.25, 0.379], [0, 0, 0], 0.3, 0.3);
+  return g;
+}
+
+function headphones(it) {
+  const g = new THREE.Group(), al = mat('#c6c8cc', 1, 0.32), knit = mat('#3b3c40', 0, 0.95), meshM = mat('#d9dadc', 0, 0.8);
+  for (const sx of [-1, 1]) {
+    add(g, rbox(0.55, 0.72, 0.3, 0.16, 0.04), al, [sx * 0.66, 0, 0], [0, PI / 2, 0]);
+    add(g, rbox(0.5, 0.66, 0.14, 0.15, 0.04), knit, [sx * 0.44, 0, 0], [0, PI / 2, 0]);
+    add(g, cyl(0.022, 0.022, 0.5, 16), al, [sx * 0.66, 0.6, 0]);
+    for (const sz of [-1, 1]) add(g, cyl(0.012, 0.012, 0.12, 8), al, [sx * 0.66, 0.9, sz * 0.07]);
+  }
+  add(g, cyl(0.05, 0.05, 0.07, 24), al, [0.7, 0.38, 0.12]);
+  add(g, new THREE.TorusGeometry(0.66, 0.06, 12, 64, PI), meshM, [0, 0.85, 0]);
+  for (const sz of [-1, 1]) add(g, new THREE.TorusGeometry(0.66, 0.014, 8, 64, PI), al, [0, 0.85, sz * 0.075]);
+  spot(g, it, 'serial', [-0.368, 0.05, 0], [0, PI / 2, 0], 0.28, 0.19, { size: 0.22 });
+  spot(g, it, 'mesh', [0.368, 0, 0], [0, -PI / 2, 0], 0.36, 0.46, { size: 0.2 });
+  wearAt(g, [0.815, 0, 0], [0, PI / 2, 0], 0.4, 0.5);
+  wearAt(g, [-0.815, 0, 0], [0, -PI / 2, 0], 0.4, 0.5);
+  return g;
+}
+
+function sneaker(it) {
+  const g = new THREE.Group();
+  const s = new THREE.Shape();
+  s.moveTo(-0.92, 0.15); s.lineTo(0.95, 0.15); s.quadraticCurveTo(1.0, 0.35, 0.7, 0.42); s.lineTo(0, 0.7); s.lineTo(-0.15, 1.02);
+  s.lineTo(-0.35, 0.98); s.lineTo(-0.6, 0.88); s.lineTo(-0.85, 0.95); s.quadraticCurveTo(-0.98, 0.6, -0.92, 0.15);
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.5, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 4, curveSegments: 16 });
+  geo.translate(0, 0, -0.25);
+  add(g, geo, mat('#ffffff', 0, 0.55, { map: TEX.jordanSide() }));
+  add(g, rbox(2.0, 0.17, 0.72, 0.08, 0.03), mat('#f2efe6', 0, 0.7), [0.02, 0.07, 0]);
+  add(g, rbox(2.0, 0.05, 0.72, 0.08, 0.015), mat('#b3202a', 0, 0.7), [0.02, -0.03, 0]);
+  const lace = mat('#f7f5ef', 0, 0.6);
+  for (let k = 0; k < 5; k++) { const xx = -0.05 + k * 0.12; add(g, cyl(0.018, 0.018, 0.56, 8), lace, [xx, 0.78 - xx * 0.42, 0], [PI / 2, 0, 0]); }
+  spot(g, it, 'swoosh', [0.0, 0.42, 0.312], [0, 0, 0], 0.9, 0.4, { size: 0.55 });
+  deco(g, spotTex(it, 'swoosh', false), [0.0, 0.42, -0.312], [0, PI, 0], 0.9, 0.4, { alpha: true });
+  spot(g, it, 'wings', [-0.46, 0.83, 0.313], [0, 0, 0], 0.24, 0.18, { size: 0.19 });
+  wearAt(g, [0.6, 0.28, 0.314], [0, 0, 0], 0.35, 0.25);
+  wearAt(g, [-0.3, 0.07, 0.362], [0, 0, 0], 0.6, 0.12);
+  wearAt(g, [-0.2, 0.5, -0.314], [0, PI, 0], 0.4, 0.3);
+  return g;
+}
+
+function record(it) {
+  const g = new THREE.Group();
+  add(g, rbox(1.6, 1.6, 0.04, 0.02, 0.008), mat('#ffffff', 0, 0.75, { map: TEX.abbey() }));
+  add(g, cyl(0.74, 0.74, 0.012, 96), mat('#ffffff', 0.2, 0.35, { map: TEX.grooves() }), [0.55, 0.05, 0.03], [PI / 2, 0, 0]);
+  spot(g, it, 'label', [0.55, 0.05, 0.0375], [0, 0, 0], 0.44, 0.44, { circle: true });
+  spot(g, it, 'runout', [0.55, -0.215, 0.0375], [0, 0, 0], 0.2, 0.045, { size: 0.13 });
+  wearAt(g, [-0.35, -0.2, 0.021], [0, 0, 0], 0.6, 0.6);
+  wearAt(g, [0.95, 0.4, 0.037], [0, 0, 0], 0.3, 0.3);
+  wearAt(g, [0, 0, -0.021], [0, PI, 0], 0.8, 0.8);
+  return g;
+}
+
+function moonJar(it) {
+  const g = new THREE.Group();
+  const prof = [[0, -1], [0.28, -1], [0.3, -0.96], [0.55, -0.72], [0.76, -0.3], [0.8, 0], [0.77, 0.3], [0.62, 0.68], [0.36, 0.93], [0.3, 1.0], [0.32, 1.06], [0.25, 1.06], [0.24, 0.98]];
+  const band = (a, b, k) => prof.slice(a, b).map(p => new THREE.Vector2(p[0] * k, p[1]));
+  add(g, new THREE.LatheGeometry(band(0, prof.length, 1), 120), new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: TEX.porcelain(), roughness: 0.4 + V.wear, clearcoat: 0.5, clearcoatRoughness: 0.2 + V.wear, side: THREE.DoubleSide }));
+  spot(g, it, 'seam', [0, 0, 0], [0, 0, 0], 0.7, 0.6, { geo: new THREE.LatheGeometry(band(4, 7, 1.006), 16, -0.45, 0.9), center: new THREE.Vector3(0, 0, 0.805), size: 0.4 });
+  spot(g, it, 'foot', [0, -1.003, 0], [PI / 2, 0, 0], 0.56, 0.56, { circle: true });
+  wearAt(g, [0, 0, 0], [0, 0, 0], 0, 0, { geo: new THREE.LatheGeometry(band(3, 7, 1.01), 12, PI - 0.35, 0.7) });
+  return g;
+}
+
+function pearls(it) {
+  const outer = new THREE.Group(), g = new THREE.Group(); outer.add(g); g.rotation.x = -1.0;
+  const pearl = new THREE.MeshPhysicalMaterial({ color: lin('#f3eee4'), roughness: 0.2 + V.wear * 0.6, clearcoat: 1, clearcoatRoughness: 0.08 + V.wear });
+  const gold = mat('#e3c46e', 1, 0.2);
+  const pts = [[0, 1], [0.7, 0.85], [0.98, 0.3], [0.8, -0.4], [0.35, -0.95], [0, -1.15], [-0.35, -0.95], [-0.8, -0.4], [-0.98, 0.3], [-0.7, 0.85]];
+  const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], 0)), true);
+  const ball = new THREE.SphereGeometry(0.058, 20, 14);
+  for (let i = 1; i < 58; i++) { const p = curve.getPointAt(i / 58); add(g, ball, pearl, [p.x, p.y, p.z]); }
+  add(g, rbox(0.14, 0.08, 0.06, 0.02, 0.01), gold, [0, 1.0, 0]);
+  spot(g, it, 'clasp', [0, 1.0, 0.032], [0, 0, 0], 0.12, 0.06, { size: 0.1 });
+  add(g, rbox(0.95, 0.6, 0.012, 0.03, 0.004), mat('#fbf9f3', 0, 0.7), [0, -0.05, -0.02]);
+  spot(g, it, 'card', [0, -0.05, -0.0135], [0, 0, 0], 0.9, 0.56, { size: 0.62 });
+  return outer;
+}
+
+function goldBar(it) {
+  const g = new THREE.Group();
+  const geo = cyl(0.75, 0.9, 0.3, 4); geo.rotateY(PI / 4);
+  const bar = add(g, geo, mat(GOLD_HEX['24K'], 1, 0.34, { flatShading: true })); // 평면이라 너무 매끈하면 어두운 벽만 비친다 bar.scale.set(1.5, 1, 0.85);
+  spot(g, it, 'mark', [0, 0.152, 0], [-PI / 2, 0, 0], 0.95, 0.47);
+  return g;
+}
+
+function goldTurtle(it) {
+  const g = new THREE.Group(), hex = GOLD_HEX[it.fake ? it.claimPurity : it.purity] || GOLD_HEX['24K'];
+  const plain = mat(hex, 1, 0.18);
+  const shell = add(g, new THREE.SphereGeometry(0.7, 48, 24, 0, 2 * PI, 0, PI / 2), mat(hex, 1, 0.22, { bumpMap: TEX.hexShell(), bumpScale: 0.04 }));
+  shell.scale.y = 0.55;
+  add(g, new THREE.TorusGeometry(0.7, 0.04, 12, 64), plain, [0, 0, 0], [PI / 2, 0, 0]);
+  add(g, new THREE.CircleGeometry(0.7, 48), plain, [0, -0.005, 0], [PI / 2, 0, 0]);
+  const head = add(g, new THREE.SphereGeometry(0.17, 24, 16), plain, [0.86, 0.12, 0]); head.scale.set(1.3, 1, 1);
+  for (const sz of [-1, 1]) add(g, new THREE.SphereGeometry(0.025, 12, 8), mat('#2a1a08', 0, 0.3), [1.0, 0.18, sz * 0.08]);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const l = add(g, new THREE.SphereGeometry(0.14, 16, 12), plain, [sx * 0.45, 0, sz * 0.52]); l.scale.set(1.3, 0.6, 1); }
+  add(g, cyl(0, 0.05, 0.18, 12), plain, [-0.78, 0.02, 0], [0, 0, PI / 2]);
+  spot(g, it, 'mark', [0, -0.012, 0], [PI / 2, 0, 0], 0.4, 0.25);
+  return g;
+}
+
+function tablet(it) {
+  const g = new THREE.Group(), al = mat('#8e9096', 1, 0.3);
+  add(g, rbox(1.15, 1.6, 0.05, 0.08, 0.015), al);
+  add(g, new THREE.ShapeGeometry(rrShape(1.11, 1.56, 0.07)), mat('#050505', 0, 0.2), [0, 0, 0.0255]);
+  add(g, new THREE.PlaneGeometry(1.05, 1.5), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: it && it.lock ? TEX.lockPad() : TEX.screen(), emissiveIntensity: 0.85, roughness: 0.06,
+    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }), [0, 0, 0.026]);
+  add(g, rbox(0.18, 0.18, 0.02, 0.05, 0.006), mat('#4a4c51', 0.8, 0.25), [-0.42, 0.66, -0.032]);
+  for (const [xx, yy] of [[-0.46, 0.7], [-0.38, 0.62]]) add(g, cyl(0.03, 0.03, 0.02, 24), gloss('#0c0d10', 0.05), [xx, yy, -0.044], [PI / 2, 0, 0]);
+  wearAt(g, [0.1, -0.2, 0.027], [0, 0, 0], 0.6, 0.8);
+  wearAt(g, [0, -0.2, -0.026], [0, PI, 0], 0.7, 0.7);
+  wearAt(g, [-0.2, 0.4, 0.027], [0, 0, 0], 0.4, 0.4);
+  return g;
+}
+
+function ps5(it) {
+  const g = new THREE.Group(), white = gloss('#f2f2f0', 0.25), black = mat('#141416', 0, 0.45);
+  add(g, rbox(0.32, 1.62, 0.78, 0.05, 0.02), black);
+  const s = new THREE.Shape();
+  s.moveTo(-0.42, -0.82); s.lineTo(0.38, -0.82); s.quadraticCurveTo(0.6, 0, 0.52, 0.9); s.lineTo(-0.3, 0.95); s.quadraticCurveTo(-0.58, 0.05, -0.42, -0.82);
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 2, curveSegments: 16 });
+  geo.translate(0, 0, -0.025);
+  for (const sx of [-1, 1]) {
+    add(g, geo, white, [sx * 0.21, 0, 0], [0, PI / 2, 0]);
+    add(g, new THREE.BoxGeometry(0.012, 1.45, 0.012), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: lin('#3b7cff'), emissiveIntensity: 1.2 }), [sx * 0.17, 0, 0.392]);
+  }
+  for (const yy of [0.25, 0.15]) add(g, rbox(0.08, 0.04, 0.02, 0.01, 0.004), mat('#2c2d31', 0, 0.5), [0, yy, 0.392]);
+  add(g, new THREE.BoxGeometry(0.2, 0.01, 0.01), mat('#050505', 0, 0.5), [0, 0.6, 0.392]);
+  add(g, cyl(0.22, 0.22, 0.04, 32), black, [0, -0.84, 0]);
+  wearAt(g, [0.252, 0.2, 0], [0, PI / 2, 0], 0.5, 0.6);
+  wearAt(g, [0, 0.3, 0.392], [0, 0, 0], 0.25, 0.4);
+  wearAt(g, [-0.252, -0.2, 0], [0, -PI / 2, 0], 0.5, 0.6);
+  return g;
+}
+
+function legoBox(it) {
+  const g = new THREE.Group();
+  add(g, rbox(1.8, 1.2, 0.36, 0.02, 0.01), mat('#2a2f3a', 0, 0.6));
+  deco(g, TEX.falcon(), [0, 0, 0.181], [0, 0, 0], 1.76, 1.16);
+  spot(g, it, 'logo', [-0.66, 0.4, 0.183], [0, 0, 0], 0.34, 0.26);
+  spot(g, it, 'seal', [0.902, 0.3, 0], [0, PI / 2, 0], 0.16, 0.16, { circle: true });
+  wearAt(g, [0.4, -0.3, 0.184], [0, 0, 0], 0.6, 0.4);
+  wearAt(g, [0, 0, -0.181], [0, PI, 0], 0.9, 0.6);
+  wearAt(g, [-0.5, 0.602, 0], [-PI / 2, 0, 0], 0.5, 0.25);
   return g;
 }
 
 const BUILD = {
-  rolex: () => watch({ bezel: '#121212', dial: '#0d0e10', second: '#e9e9e9' }),
-  omega: () => watch({ bezel: '#1d3a8a', dial: '#22458f', second: '#d8392b' }),
+  rolex: it => watch({ bezel: '#121212', dial: '#0d0e10', second: '#e9e9e9' }, it),
+  omega: it => watch({ bezel: '#1d3a8a', dial: '#22458f', second: '#d8392b' }, it),
   chanel: flapBag, lv: speedy, macbook: laptop, iphone: phone, switch: console_, leica: camera, guitar,
   diamond: diamondRing, pen, celadon: vase, gneck: necklace, gring: twinRings, gbrace: bracelet,
+  cartier: tank, hermes: birkin, airpods: headphones, jordan: sneaker, lp: record, moonjar: moonJar, pearl: pearls,
+  ipad: tablet, ps5, lego: legoBox, goldbar: goldBar, turtle: goldTurtle,
 };
 
-const modelKey = it => [it.key, it.cond || '', it.gold ? (it.fake ? it.claimPurity : it.purity) : ''].join('|');
+const modelKey = it => [it.key, it.cond || '', it.gold ? (it.fake ? it.claimPurity : it.purity) : '',
+  (SPOTS[it.key] || []).map(s => it.tells && it.tells[s.id] ? 1 : 0).join(''), it.lock ? 'L' : ''].join('|');
 
 function makeModel(it) {
-  V.wear = WEAR[it.cond] || 0;
+  V.wear = WEAR[it.cond] || 0; V.scrLeft = SCRATCHES[it.cond] || 0; V.building = [];
   const m = BUILD[it.key](it);
-  V.wear = 0;
+  const built = V.building;
+  V.wear = 0; V.scrLeft = 0; V.building = null;
   const box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
   const s = 2.3 / Math.max(size.x, size.y, size.z);
   m.scale.setScalar(s); m.position.copy(c.multiplyScalar(-s));
   const wrap = new THREE.Group(); wrap.add(m);
+  wrap.updateMatrixWorld(true);
+  // 단서 부위를 wrap 기준 위치·방향·확대 거리로 기록해 둔다 (회전 0 상태라 월드 좌표 = wrap 좌표)
+  wrap.userData.spots = (SPOTS[it.key] || []).map(def => {
+    const b = built.find(x => x.id === def.id); if (!b) return null;
+    const q = b.mesh.getWorldQuaternion(new THREE.Quaternion());
+    return { id: def.id, label: def.label, p: b.mesh.localToWorld(b.center.clone()), q, n: new THREE.Vector3(0, 0, 1).applyQuaternion(q),
+      d: Math.max(0.32, b.size * b.mesh.getWorldScale(new THREE.Vector3()).x * 2.6) };
+  }).filter(Boolean);
   return wrap;
 }
 
@@ -1077,13 +2118,22 @@ function initViewer() {
     V.r = r;
     const env = envMap(r);
     V.scene = makeStage(env); V.tScene = makeStage(env);
-    V.cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); V.cam.position.set(0, 1.2, 5.6); V.cam.lookAt(0, -0.1, 0);
+    CAM0 = new THREE.Vector3(0, 1.2, 5.6); LOOK0 = new THREE.Vector3(0, -0.1, 0);
+    V.cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); V.cam.position.copy(CAM0); V.cam.lookAt(LOOK0);
+    V.tcam = V.cam.clone();
+    V.look = LOOK0.clone(); V.camT = CAM0.clone(); V.lookT = LOOK0.clone(); V.qT = new THREE.Quaternion();
     const cv = r.domElement;
-    cv.addEventListener('pointerdown', e => { V.drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointerdown', e => { V.drag = { x: e.clientX, y: e.clientY, moved: 0 }; cv.setPointerCapture(e.pointerId); });
     cv.addEventListener('pointermove', e => {
       if (!V.drag) return;
-      V.ry += (e.clientX - V.drag.x) * 0.012; V.rx = clamp(V.rx + (e.clientY - V.drag.y) * 0.008, -0.8, 0.8);
-      V.drag = { x: e.clientX, y: e.clientY };
+      const dx = e.clientX - V.drag.x, dy = e.clientY - V.drag.y;
+      V.drag.x = e.clientX; V.drag.y = e.clientY;
+      if (V.focus !== null) { // 확대 중에 끌면 원래 자리로 물러난다
+        V.drag.moved += Math.abs(dx) + Math.abs(dy);
+        if (V.drag.moved < 8) return;
+        unfocus(); stageOverlay(cv.parentElement);
+      }
+      V.ry += dx * 0.012; V.rx = clamp(V.rx + dy * 0.008, -0.8, 0.8);
     });
     const up = () => { V.drag = null; };
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
@@ -1093,22 +2143,59 @@ function initViewer() {
   } catch (e) { V.ok = false; }
 }
 
+let CAM0, LOOK0; // three.js가 없을 수도 있어서 initViewer에서 만든다
+
 function loop() {
   requestAnimationFrame(loop);
   const cv = V.r.domElement;
   if (!cv.isConnected || !V.wrap) return;
   const host = cv.parentElement, w = host.clientWidth, h = host.clientHeight;
   if (w && h && (w !== V.w || h !== V.h)) { V.w = w; V.h = h; V.r.setSize(w, h, false); V.cam.aspect = w / h; V.cam.updateProjectionMatrix(); }
-  if (!V.drag && !V.reduced) V.ry += 0.005;
-  V.wrap.rotation.set(V.rx, V.ry, 0);
+  const k = V.reduced ? 1 : 0.14, sp = V.focus !== null ? V.spots[V.focus] : null;
+  if (sp) V.wrap.quaternion.slerp(V.qT, k);
+  else {
+    if (!V.drag && !V.reduced && !V.loupe) V.ry += 0.005;
+    V.rz += -V.rz * k; V.rx += (clamp(V.rx, -0.8, 0.8) - V.rx) * k;
+    V.wrap.rotation.set(V.rx, V.ry, V.rz);
+  }
+  const q = V.wrap.quaternion;
+  if (sp) { const p = sp.p.clone().applyQuaternion(q); V.lookT.copy(p); V.camT.set(p.x, p.y, p.z + sp.d); }
+  else { V.lookT.copy(LOOK0); V.camT.copy(CAM0); }
+  V.cam.position.lerp(V.camT, k); V.look.lerp(V.lookT, k); V.cam.lookAt(V.look); V.cam.updateMatrixWorld();
+  V.pins.forEach((el, i) => {
+    const s = V.spots[i], p = s.p.clone().applyQuaternion(q);
+    const facing = s.n.clone().applyQuaternion(q).dot(V.cam.position.clone().sub(p)) > 0;
+    if (sp || !facing) { el.style.display = 'none'; return; }
+    p.project(V.cam);
+    el.style.display = ''; el.style.left = ((p.x + 1) / 2 * 100) + '%'; el.style.top = ((1 - p.y) / 2 * 100) + '%';
+  });
   V.r.render(V.scene, V.cam);
 }
 
 function stageSet(it) {
   const k = modelKey(it);
-  if (V.key === k) return;
-  if (V.wrap) { V.scene.remove(V.wrap); dispose(V.wrap); }
-  V.wrap = makeModel(it); V.scene.add(V.wrap); V.key = k; V.ry = 0.5; V.rx = 0;
+  if (V.key !== k) {
+    if (V.wrap) { V.scene.remove(V.wrap); dispose(V.wrap); }
+    V.wrap = makeModel(it); V.scene.add(V.wrap); V.key = k; V.ry = 0.5; V.rx = 0; V.rz = 0; V.focus = null;
+  }
+  V.spots = V.wrap.userData.spots;
+}
+
+function unfocus() {
+  if (V.focus === null) return;
+  const e = new THREE.Euler().setFromQuaternion(V.wrap.quaternion, 'XYZ');
+  V.rx = e.x; V.ry = e.y; V.rz = e.z; V.focus = null;
+}
+
+// 루페로 한 곳을 들여다본다: 그 면이 카메라를 정면으로 보도록 돌리고 다가간다
+function inspectSpot(id) {
+  const c = G.cur;
+  if (!V.ok || !c || c.kind === 'choice' || c.status !== 'talk' || !c.rev.loupe) return;
+  const i = V.spots.findIndex(s => s.id === id); if (i < 0) return;
+  V.focus = i; V.qT.copy(V.spots[i].q).invert();
+  if (!c.rev.loupe.includes(id)) c.rev.loupe.push(id);
+  UI.scrollTo = 'stage';
+  render();
 }
 
 function thumb(it, cls = 'th') {
@@ -1116,36 +2203,126 @@ function thumb(it, cls = 'th') {
   const k = modelKey(it);
   if (!V.thumbs[k]) {
     const w = makeModel(it); w.rotation.set(0.1, 0.55, 0); V.tScene.add(w);
-    const r = V.r, pr = r.getPixelRatio(), aspect = V.cam.aspect;
-    r.setPixelRatio(1); r.setSize(120, 120, false); V.cam.aspect = 1; V.cam.updateProjectionMatrix();
-    r.render(V.tScene, V.cam);
+    const r = V.r, pr = r.getPixelRatio();
+    r.setPixelRatio(1); r.setSize(120, 120, false);
+    r.render(V.tScene, V.tcam);
     V.thumbs[k] = r.domElement.toDataURL('image/png');
-    r.setPixelRatio(pr); V.cam.aspect = aspect; V.cam.updateProjectionMatrix();
+    r.setPixelRatio(pr);
     V.w = 0; // 다음 프레임에 원래 크기로 복구
     V.tScene.remove(w); dispose(w);
   }
   return `<img class="${cls}" src="${V.thumbs[k]}" alt="">`;
 }
 
-function stageHTML(it) {
-  V.want = it;
+function stageHTML(it, opt = {}) {
+  V.want = it; V.wantOpt = opt;
   return `<div class="stage"><span class="fallback" aria-hidden="true">${it.e}</span></div>`;
 }
 
 function attachStage() {
   const st = document.querySelector('.stage');
-  if (!st || !V.ok || !V.want) return;
+  if (!st || !V.ok || !V.want) { V.pins = []; return; }
   stageSet(V.want);
   st.replaceChildren(V.r.domElement);
-  st.insertAdjacentHTML('beforeend', '<span class="stage-cap">드래그해서 돌려보기</span>');
+  stageOverlay(st);
+}
+
+// 캔버스 위에 얹는 것들: 루페 표시(＋), 확대 중 상단 바, 안내 문구
+function stageOverlay(st) {
+  if (!st) return;
+  st.querySelectorAll('.ov').forEach(e => e.remove());
+  const o = V.wantOpt || {}, checked = o.checked || [];
+  V.loupe = !!o.loupe;
+  if (!V.loupe) unfocus();
+  const sp = V.focus !== null ? V.spots[V.focus] : null;
+  let html = '';
+  if (V.loupe && !sp) html += V.spots.map(s => { const done = checked.includes(s.id);
+    return `<button class="ov pin ${done ? 'done' : ''}" data-spot="${s.id}" style="display:none" aria-label="${s.label} 들여다보기" title="${s.label}">${done ? '✓' : '+'}</button>`; }).join('');
+  // UV 램프: 확대한 부위가 가품 티가 나는 곳이면 형광으로 번진다
+  const uvHit = !!(sp && up('uv') && G.cur && G.cur.item && G.cur.item.tells && G.cur.item.tells[sp.id]);
+  st.classList.toggle('uv-hit', uvHit);
+  if (sp) html += `<div class="ov focus-bar"><span>🔍 ${sp.label}${up('uv') ? (uvHit ? ' <b class="uv-tag">형광 반응!</b>' : ' <span class="uv-none">UV 반응 없음</span>') : ''}</span><button class="btn mini" data-act="unfocus">전체 보기</button></div>`;
+  html += `<span class="ov stage-cap">${sp ? '끌면 원래 자리로 물러난다' : V.loupe ? '＋ 표시를 눌러 루페로 들여다보기' : '드래그해서 돌려보기'}</span>`;
+  st.insertAdjacentHTML('beforeend', html);
+  V.pins = [...st.querySelectorAll('.pin')];
+}
+
+/* ---------- 감정 도감 ---------- */
+// 가품을 잡아내거나 밤에 판명되면 그 단서가 기록된다. 판이 바뀌어도 남는다.
+const DEX = new Set();
+const DEX_ALL = Object.keys(SPOTS).flatMap(k => SPOTS[k].map(s => ({ k, id: s.id, label: s.label, real: s.real, name: ITEMS[k].name })));
+const UI = { dex: false, scrollTo: null };
+const dexImgs = {};
+function unlockDex(k, ids) {
+  let n = 0;
+  for (const id of ids) { const key = k + '.' + id; if (!DEX.has(key)) { DEX.add(key); n++; } }
+  if (n) storeSet('dex', { keys: [...DEX] });
+  return n;
+}
+function dexImg(k, id, tell) {
+  const key = [k, id, tell].join('|');
+  if (dexImgs[key]) return dexImgs[key];
+  const I = ITEMS[k], it = { key: k, gold: !!I.gold, fake: tell, purity: I.purity || '18K', claimPurity: I.purity || '18K', tells: {} };
+  return (dexImgs[key] = spotTex(it, id, tell).image.toDataURL('image/png'));
+}
+
+/* ---------- 진행 저장 ---------- */
+// 플레이어 본인만 읽는 db 공간(data/users/<id>/)에 저장한다. db를 못 쓰는 환경이면 브라우저 저장소로 대신한다.
+const STORE = { db: null, uid: null, save: null, timer: 0, writing: false, dirty: false };
+async function storeGet(name) {
+  if (STORE.db) {
+    try { const snap = await STORE.db.doc(`data/users/${STORE.uid}/${name}`).get(); return snap.exists ? snap.data() : null; } catch (e) { /* 아래 로컬로 */ }
+  }
+  try { return JSON.parse(localStorage.getItem('pawnshop.' + name) || 'null'); } catch (e) { return null; }
+}
+async function storeSet(name, obj) {
+  if (STORE.db) {
+    try { await STORE.db.doc(`data/users/${STORE.uid}/${name}`).set(obj); return; }
+    catch (e) { if (e && e.code === 'invalid_argument') STORE.db = null; } // 읽기 전용 열람자: 이번 방문은 로컬로
+  }
+  try { localStorage.setItem('pawnshop.' + name, JSON.stringify(obj)); } catch (e) { /* 저장 불가 환경 */ }
+}
+async function initStore() {
+  try {
+    const c = window.claude;
+    if (c && c.use) {
+      const [db, user] = await Promise.all([c.use('db'), c.use('user')]);
+      const uid = user ? await user.id() : null;
+      if (db && uid) { STORE.db = db; STORE.uid = uid; }
+    }
+  } catch (e) { /* 로컬로 */ }
+  const [save, dex] = await Promise.all([storeGet('save'), storeGet('dex')]);
+  (dex && dex.keys || []).forEach(k => DEX.add(k));
+  if (save && save.g) STORE.save = save;
+  if (G.phase === 'intro' || DEX.size) render();
+}
+function scheduleSave() {
+  clearTimeout(STORE.timer);
+  STORE.timer = setTimeout(flushSave, 1200);
+}
+async function flushSave() {
+  if (STORE.writing) { STORE.dirty = true; return; }
+  STORE.writing = true;
+  const over = G.phase === 'end' || G.phase === 'bankrupt';
+  await storeSet('save', over ? { g: null } : { at: Date.now(), day: G.day, cash: G.cash, g: JSON.stringify(G) });
+  STORE.writing = false;
+  if (STORE.dirty) { STORE.dirty = false; flushSave(); }
+}
+function continueGame() {
+  if (!STORE.save) return;
+  try { G = JSON.parse(STORE.save.g); } catch (e) { STORE.save = null; return render(); }
+  STORE.save = null; V.key = null;
+  render();
 }
 
 /* ---------- 렌더 ---------- */
 function knownNotes(it, rev) {
   const rows = [];
+  if (it.exposed) rows.push(['판명', '가품', 'warn']);
   if (rev.cond) rows.push(['상태', `${rev.cond}급`, rev.cond !== it.claimCond ? 'warn' : '']);
   if (rev.price) rows.push(['S급 정품 시세', `${Math.round(rev.price[0])}~${Math.round(rev.price[1])}만원`, '']);
   if (rev.auth) rows.push(['정밀 감정 (90%)', rev.auth, rev.auth === '가품' ? 'warn' : 'ok']);
+  if (rev.loupe) rows.push(['루페 감정', `${rev.loupe.length}/${(SPOTS[it.key] || []).length}곳 확인`, '']);
   if (rev.weigh !== undefined) rows.push(['실측 무게', `${rev.weigh}돈 (${(rev.weigh * 3.75).toFixed(2)}g)`, rev.weigh !== it.claimDon ? 'warn' : '']);
   if (rev.purity) rows.push(['순도 (95%)', rev.purity, rev.purity === '도금' ? 'warn' : rev.purity !== it.claimPurity ? 'warn' : 'ok']);
   return rows;
@@ -1159,7 +2336,7 @@ function goldEst(it, rev) {
 function renderCounter() {
   if (G.phase === 'closed') {
     return `<section class="counter"><div class="qbar"><span>오늘 손님 <b>${G.served}/${G.queue}</b></span></div>
-      <div class="bubble">마지막 손님이 나갔다. 금고에 있는 물건을 정리하고 셔터를 내리자.</div>
+      <div class="bubble">마지막 손님이 나갔다. 금고에 있는 물건을 정리하고 셔터를 내리자.</div>${tipHTML(null)}
       <div class="actions"><button class="btn primary" data-act="endDay">영업 마감</button></div></section>`;
   }
   const c = G.cur; if (!c) return '';
@@ -1169,19 +2346,30 @@ function renderCounter() {
   const notes = knownNotes(it, c.rev);
   const est = it.gold ? goldEst(it, c.rev) : null;
   if (est !== null) notes.push(['금은방 매입가', won(est), 'ok']);
-  const tools = it.gold ? ['weigh', 'purity', 'origin'] : ['cond', 'price', 'auth', 'origin'];
+  // 3D가 되면 확률형 정밀 감정 대신 루페로 직접 본다. 전자기기는 가품이 없어 감정 도구가 없다.
+  const eye = V.ok && SPOTS[it.key] ? ['loupe'] : [];
+  const tools = it.gold ? ['weigh', 'purity', ...eye, 'origin'] : ['cond', 'price', ...(ITEMS[it.key].nofake ? [] : eye.length ? eye : ['auth']), 'origin'];
+  const looking = c.status === 'talk' && c.rev.loupe;
+  const eyeList = looking ? `<div class="eye"><div class="eye-h"><b>정품 체크 포인트</b><span>물건과 기준을 비교해 직접 판단하자</span></div>
+    ${SPOTS[it.key].map(s => { const done = c.rev.loupe.includes(s.id);
+      return `<button class="eye-row ${done ? 'done' : ''}" data-spot="${s.id}"><b>${done ? '✓' : '○'} ${s.label}</b><span>${s.real}</span></button>`; }).join('')}</div>` : '';
   const low = c.patience <= 1;
   const pat = Array.from({ length: c.maxPatience }, (_, i) => `<i class="${i < c.patience ? 'on' : ''}"></i>`).join('');
   const isPawn = c.mode === 'pawn';
+  // 흥정 단위는 희망가 자릿수를 따라간다: 85만원이면 1·10, 1,250만원이면 10·100·1,000
+  const top = 10 ** Math.floor(Math.log10(Math.max(1, c.ask)));
+  const steps = [...new Set([top / 100, top / 10, top].map(n => Math.max(1, n)))];
   let deal;
   if (c.status === 'talk') {
     deal = `<div class="deal">
       <div class="askline"><span class="k">${isPawn ? '손님 희망 대출액' : '손님 희망가'}</span><span class="v">${won(c.ask)}</span></div>
       <div class="offer-row">
-        <button class="btn step" data-step="-10">−10</button><button class="btn step" data-step="-1">−1</button>
         <input id="offer" type="number" inputmode="numeric" min="1" value="${c.offer}" aria-label="제시 금액(만원)">
-        <button class="btn step" data-step="1">+1</button><button class="btn step" data-step="10">+10</button>
         <span class="hint">만원</span>
+      </div>
+      <div class="steps" style="grid-template-columns: repeat(${steps.length * 2}, minmax(0, 1fr))">
+        ${steps.slice().reverse().map(n => `<button class="btn step" data-step="${-n}">−${n.toLocaleString('ko-KR')}</button>`).join('')}
+        ${steps.map(n => `<button class="btn step" data-step="${n}">+${n.toLocaleString('ko-KR')}</button>`).join('')}
       </div>
       <div class="offer-row">
         ${[0.4, 0.6, 0.8].map(p => `<button class="btn step" data-pct="${p}">희망가 ${p * 100}%</button>`).join('')}
@@ -1211,25 +2399,45 @@ function renderCounter() {
     </div>
     <div class="slip ${c.fresh ? 'enter' : ''}">
       <div class="slip-head"><span class="t">감 정 서</span><span class="mode">${isPawn ? '전당 요청' : '매입 요청'}</span></div>
-      <div class="item has-stage">${stageHTML(it)}<div><h2>${it.name}</h2><div class="claim">${claim}</div>
-      <div class="notes">${notes.length ? notes.map(([l, v, cls]) => `<div><span class="lbl">${l}</span><span class="${cls}">${v}</span></div>`).join('') : '<div class="empty">아직 감정하지 않았다. 아래 도구로 확인하자.</div>'}</div>
+      <div class="item has-stage">${stageHTML(it, { loupe: !!looking, checked: c.rev.loupe || [] })}<div><h2>${it.name}</h2><div class="claim">${claim}</div>
+      <div class="notes">${notes.length ? notes.map(([l, v, cls]) => `<div><span class="lbl">${l}</span><span class="${cls}">${v}</span></div>`).join('') : '<div class="empty">아직 감정하지 않았다. 물건을 돌려보거나 아래 도구로 확인하자.</div>'}</div>
+      ${eyeList}
       </div></div>
       ${stamp}
     </div>
     ${c.status === 'talk' ? `<div class="tools">${tools.map(t => {
-      const T = TOOLS[t], used = t === 'origin' ? c.asked : c.rev[t] !== undefined;
-      return `<button class="btn" data-tool="${t}" ${used || G.ap < T.cost ? 'disabled' : ''}>${T.label}<span class="c">${T.cost ? '감정력 ' + T.cost : '무료'}</span></button>`;
-    }).join('')}</div>` : ''}
+      const T = TOOLS[t], cost = toolCost(t), used = t === 'origin' ? c.asked : c.rev[t] !== undefined;
+      return `<button class="btn" data-tool="${t}" ${used || G.ap < cost ? 'disabled' : ''}>${T.label}<span class="c">${cost ? '감정력 ' + cost : '무료'}</span></button>`;
+    }).join('')}
+      <button class="btn danger" data-act="buyAP" ${(G.apBought || 0) >= AP_BUY_MAX || G.cash < apPrice() ? 'disabled' : ''} title="오늘 ${AP_BUY_MAX - (G.apBought || 0)}번 더 살 수 있다">감정력 +1 사기<span class="c">${(G.apBought || 0) >= AP_BUY_MAX ? '오늘 끝' : `${won(apPrice())} · ${AP_BUY_MAX - (G.apBought || 0)}회`}</span></button></div>` : ''}
+    ${tipHTML(c)}
     ${deal}
   </section>`;
   c.fresh = false;
   return html;
 }
 
+// 첫날 도움말: 지금 할 일을 하나씩 알려준다
+function tipHTML(c) {
+  if (!G.tutorial || G.day > 1) return '';
+  let t;
+  if (G.phase === 'closed') t = '오늘 장사 끝. 금고의 물건은 <b>진열하기</b>로 구매 제안을 받거나, 금은 금은방에 바로 판다. 정리가 끝나면 <b>영업 마감</b>. 밤에는 오늘 감정을 복기해 준다.';
+  else if (!c || c.kind === 'choice') return '';
+  else if (c.status !== 'talk') t = '거래가 어땠는지는 밤 정산의 <b>감정 복기</b>에서 알려준다. 다음 손님을 들이자.';
+  else if (G.served === 1 && !c.rev.loupe) t = '① 손님 말만 믿지 말자. 물건은 드래그로 돌려볼 수 있다. <b>루페 감정</b>을 눌러 직접 들여다보자.';
+  else if (G.served === 1 && c.rev.loupe.length < SPOTS[c.item.key].length) t = '② 모델 위의 <b>＋</b>를 눌러 확대하고, 감정서의 <b>정품 체크 포인트</b>와 비교하자.';
+  else if (G.served === 1) t = '③ 기준과 다르면 가품이다. 가품이면 <b>돌려보내기</b>. 정품이면 금액을 정해 흥정한다. 낮게 부르면 손님 말투로 마지노선이 드러난다.';
+  else if (c.item.gold) t = '금은 <b>저울 측정</b>과 <b>순도 검사</b>로 금은방 매입가를 바로 알 수 있다. 각인에 GP가 있으면 도금이다.';
+  else if (c.mode === 'pawn') t = '전당: 지금 빌려주면 3일 뒤 이자 12%와 함께 돌아오거나, 못 갚으면 물건이 내 것이 된다.';
+  else if (G.ap <= 2) t = '감정력이 모자라면 <b>감정력 +1 사기</b>로 현금을 주고 더 살 수 있다. 살수록 비싸진다.';
+  else t = '<b>출처 묻기</b>는 무료다. 말을 더듬는 손님의 물건은 장물일 수 있고, 밤에 경찰이 압수해 간다.';
+  return `<div class="tip"><span>💡 ${t}</span><button class="btn mini" data-act="tipOff">도움말 끄기</button></div>`;
+}
+
 function renderChoice(c) {
   const S = STORY[c.story], r = G.reg[S.arc], sp = SPEAKERS[c.speaker], isReg = c.speaker in REG;
   const talk = c.status === 'talk';
-  const opts = talk ? S.choices(r) : [];
+  const opts = talk ? S.choices(r, c) : [];
   const html = `<section class="counter">
     <div class="qbar"><span>오늘 손님 <b>${G.served}/${G.queue}</b></span><span>사연 이벤트</span></div>
     <div class="guest">
@@ -1262,7 +2470,8 @@ function renderSide() {
     let act;
     if (x.gold) act = `<div class="offer-box"><span class="q">금은방 매입가 ${won(realOf(x))}<span class="hint"> (오늘 시세)</span></span><button class="btn mini" data-gold="${x.id}" ${canSell ? '' : 'disabled'}>금은방에 팔기</button></div>`;
     else if (x.offer) act = `<div class="offer-box"><span class="q">${x.offerNote}: <b class="num">${won(x.offer)}</b></span><span><button class="btn mini primary" data-sell="${x.id}">판매</button> <button class="btn mini" data-hold="${x.id}">보류</button></span></div>`;
-    else act = `<div class="offer-box"><span class="hint">${x.offerDay === G.day ? '오늘은 더 이상 찾는 사람이 없다' : '진열하면 하루 한 번 구매 제안이 온다'}</span><button class="btn mini" data-buyer="${x.id}" ${x.offerDay === G.day || !canSell ? 'disabled' : ''}>진열하기</button></div>`;
+    else act = `<div class="offer-box"><span class="hint">${!canAsk(x) ? '오늘은 더 이상 찾는 사람이 없다' : `진열하면 하루 ${up('shelf') ? '두' : '한'} 번 구매 제안이 온다`}</span><button class="btn mini" data-buyer="${x.id}" ${!canAsk(x) || !canSell ? 'disabled' : ''}>진열하기</button></div>`;
+    if (x.exposed && !x.gold) act += `<div class="offer-box"><span class="hint">판명된 가품이다.</span><span>${x.reported ? '' : `<button class="btn mini" data-fraud="${x.id}">사기 신고</button> `}<button class="btn mini" data-dump="${x.id}">짝퉁 업자 ${won(dumpPrice(x))}</button></span></div>`;
     return `<div class="inv-item"><div class="inv-top">${thumb(x)}<span class="n">${x.name}</span><span class="num">${won(x.cost)}</span></div>
       <div class="inv-meta">${x.from}${notes ? ' · ' + notes : ' · 감정 기록 없음'}</div>${act}</div>`;
   }).join('') : '<div class="empty-note">금고가 비어 있다. 손님에게서 물건을 사들이거나, 유질된 전당물이 여기로 온다.</div>';
@@ -1276,14 +2485,43 @@ function renderSide() {
       <div class="inv-meta">${G.reg[k].note || REG[k].label}</div></div></div>`).join('')
     : '<div class="empty-note">아직 단골이 없다. 다시 찾아올 손님은 여기에 적힌다.</div>';
   return `<aside class="side">
-    <div class="box"><h3>금고 <small>${G.inv.length}점 · 원가 ${won(G.inv.reduce((a, x) => a + x.cost, 0))}</small></h3><div class="inv">${inv}</div></div>
-    <div class="box"><h3>전당표 <small>${G.pawns.length}건</small></h3><div class="tickets">${tickets}</div></div>
-    <div class="box"><h3>단골 수첩 <small>${met.length}/${Object.keys(REG).length}명</small></h3><div class="book">${book}</div></div>
-    <div class="box"><h3>장부</h3><div class="log">${G.log.length ? G.log.map(l => `<div>${l}</div>`).join('') : '<div>아직 기록이 없다.</div>'}</div></div>
+    <div class="box" id="sec-inv"><h3>금고 <small>${G.inv.length}점 · 원가 ${won(G.inv.reduce((a, x) => a + x.cost, 0))}</small></h3><div class="inv">${inv}</div></div>
+    <div class="box"><h3>급전 창구 <small>${G.debt ? `빚 ${won(G.debt)}` : '빚 없음'}</small></h3>
+      <div class="offer-box"><span class="hint">은행에서 ${won(LOAN)}씩, 이자 ${LOAN_RATE * 100}%. 빚은 마지막 날 자동으로 갚는다.</span>
+      <span><button class="btn mini" data-act="borrow" ${(G.debt || 0) + LOAN * (1 + LOAN_RATE) > DEBT_CAP ? 'disabled' : ''}>${won(LOAN)} 빌리기</button>${G.debt ? ` <button class="btn mini" data-act="repay" ${G.cash > 0 ? '' : 'disabled'}>갚기</button>` : ''}</span></div></div>
+    <div class="box" id="sec-pawn"><h3>전당표 <small>${G.pawns.length}건</small></h3><div class="tickets">${tickets}</div></div>
+    <div class="box"><h3>감정 도감 <small>${DEX.size}/${DEX_ALL.length}곳</small></h3>
+      <div class="offer-box"><span class="hint">가품을 잡아내거나 밤에 판명되면 단서가 기록된다. 판이 바뀌어도 남는다.</span><button class="btn mini" data-act="dex">도감 펼치기</button></div></div>
+    <div class="box" id="sec-book"><h3>단골 수첩 <small>${met.length}/${Object.keys(REG).length}명</small></h3><div class="book">${book}</div></div>
+    <div class="box" id="sec-log"><h3>장부</h3><div class="log">${G.log.length ? G.log.map(l => `<div>${l}</div>`).join('') : '<div>아직 기록이 없다.</div>'}</div></div>
   </aside>`;
 }
 
+function renderDex() {
+  const rows = DEX_ALL.map(d => {
+    const open = DEX.has(d.k + '.' + d.id);
+    const imgs = open && V.ok ? `<figure><img src="${dexImg(d.k, d.id, false)}" alt=""><figcaption>정품</figcaption></figure><figure><img src="${dexImg(d.k, d.id, true)}" alt=""><figcaption>가품</figcaption></figure>`
+      : `<div class="dex-lock">${open ? '✓' : '?'}</div>`;
+    return `<div class="dex-row ${open ? '' : 'locked'}"><div class="dex-imgs">${imgs}</div><div><b>${d.name} · ${d.label}</b><span>${open ? d.real : '아직 잡아내지 못한 단서'}</span></div></div>`;
+  }).join('');
+  return `<div class="overlay" data-act="dexClose"><div class="modal wide" data-stop><div class="slip">
+    <div class="slip-head"><span class="t">감 정 도 감</span><span class="mode">${DEX.size} / ${DEX_ALL.length}</span></div>
+    <div class="dex">${rows}</div>
+    <button class="btn primary" data-act="dexClose">닫기</button>
+  </div></div></div>`;
+}
+
+// 휴대폰 하단 바로가기: 카운터와 금고가 한 줄로 쌓이는 화면에서만 보인다
+function renderTabs() {
+  const offers = G.inv.filter(x => x.offer).length;
+  const tab = (to, label, n, hot) => `<button class="tab" data-jump="${to}">${label}${n ? `<b class="${hot ? 'hot' : ''}">${n}</b>` : ''}</button>`;
+  return `<nav class="tabs" aria-label="바로가기">
+    ${tab('counter', '카운터', 0)}${tab('sec-inv', '금고', G.inv.length, offers)}${tab('sec-pawn', '전당표', G.pawns.length)}${tab('sec-book', '단골', 0)}${tab('sec-log', '장부', 0)}
+  </nav>`;
+}
+
 function renderModal() {
+  if (UI.dex) return renderDex();
   if (G.phase === 'intro') {
     return `<div class="overlay"><div class="modal"><div class="slip enter">
       <div class="slip-head"><span class="t">개 업 안 내</span><span class="mode">D1 / D${DAYS}</span></div>
@@ -1291,14 +2529,18 @@ function renderModal() {
       <p>삼촌에게 물려받은 골목 전당포. 금고엔 ${won(START_CASH)}, 월세는 7일마다 ${won(RENT)}.</p>
       <p><b>${DAYS}일 뒤 현금 ${won(GOAL)}</b>을 만들면 가게를 지킨다.</p>
       <ul>
-        <li><b>감정</b>: 하루 감정력 ${AP_MAX}. 상태, 시세, 진품 여부를 확인해 손님 말의 진위를 가린다.</li>
+        <li><b>감정</b>: 하루 감정력 ${AP_MAX}. 상태, 시세, 진품 여부를 확인해 손님 말의 진위를 가린다. 모자라면 현금으로 하루 ${AP_BUY_MAX}번까지 더 살 수 있다(살수록 비싸진다).</li>
+        <li><b>루페</b>: 물건은 드래그로 돌려볼 수 있다. 루페를 들면 확인할 곳이 표시되고, 눌러서 확대해 정품 기준과 직접 비교한다. 흠집이나 잠긴 화면도 놓치지 말자.</li>
         <li><b>흥정</b>: 너무 깎으면 인내심이 바닥나 떠난다. 모욕적인 금액은 두 배로 깎인다.</li>
         <li><b>전당</b>: 빌려주고 ${TERM}일 뒤 이자 ${INTEREST * 100}%를 받거나, 못 갚으면 물건을 가진다.</li>
         <li><b>장물</b>: 출처가 수상한 물건은 밤에 경찰이 압수해 갈 수 있다.</li>
         <li><b>금</b>: 저울과 순도 검사로 금은방 매입가를 바로 계산할 수 있다. 시세는 매일 바뀐다.</li>
         <li><b>단골</b>: 다시 찾아오는 손님들이 있다. 오늘의 선택이 그들의 다음 방문을 바꾼다.</li>
+        <li><b>손실 회복</b>: 가품을 샀어도 끝이 아니다. 사기 신고, 짝퉁 업자 처분, 은행 급전으로 버티고, 밤에는 가게를 정비해 다음을 대비한다.</li>
+        <li><b>복기와 도감</b>: 밤마다 오늘 감정이 맞았는지 알려주고, 잡아낸 가품 단서는 도감에 모인다. 진행은 자동 저장된다.</li>
       </ul>
-      <button class="btn primary" data-act="start">셔터 올리기</button>
+      ${STORE.save ? `<button class="btn primary" data-act="continue">이어하기 · D${STORE.save.day} · 현금 ${won(STORE.save.cash)}</button> <button class="btn" data-act="start">새로 시작</button>`
+        : '<button class="btn primary" data-act="start">셔터 올리기</button>'}
     </div></div></div>`;
   }
   if (G.phase === 'night') {
@@ -1309,13 +2551,17 @@ function renderModal() {
       <div class="row"><span>현금</span><span>${won(G.cash)}</span></div>
       <div class="row"><span>평판</span><span>${G.rep}</span></div>
       <div class="row"><span>다음 월세</span><span>D${Math.ceil((G.day + 1) / 7) * 7}</span></div>
+      ${G.debt ? `<div class="row"><span>빚 (마지막 날 상환)</span><span>${won(G.debt)}</span></div>` : ''}
+      <h3 class="shop-h">가게 정비</h3>
+      <div class="shop">${Object.entries(UPGRADES).map(([k, U]) => `<div class="up ${up(k) ? 'owned' : ''}"><b>${U.name}</b><span>${U.desc}</span>
+        ${up(k) ? '<em>설치됨</em>' : `<button class="btn mini" data-up="${k}" ${G.cash < U.cost ? 'disabled' : ''}>${won(U.cost)}</button>`}</div>`).join('')}</div>
       <button class="btn primary" data-act="nextDay">${G.day + 1}일차 문 열기</button>
     </div></div></div>`;
   }
   if (G.phase === 'end' || G.phase === 'bankrupt') {
     const bank = G.phase === 'bankrupt';
     const grade = bank ? 'F' : G.cash >= GOAL * 1.3 ? 'S' : G.cash >= GOAL ? 'A' : G.cash >= GOAL * 0.7 ? 'B' : 'C';
-    const title = bank ? '월세를 못 내 문을 닫았다' : grade === 'S' ? '골목의 금고왕' : grade === 'A' ? '가게를 지켜냈다' : grade === 'B' ? '겨우 버텼다' : '목표에 못 미쳤다';
+    const title = bank ? (G.debtFail ? '빚을 다 갚지 못하고 문을 닫았다' : '월세를 못 내 문을 닫았다') : grade === 'S' ? '골목의 금고왕' : grade === 'A' ? '가게를 지켜냈다' : grade === 'B' ? '겨우 버텼다' : '목표에 못 미쳤다';
     const s = G.stats;
     return `<div class="overlay"><div class="modal"><div class="slip enter">
       <div class="slip-head"><span class="t">결 산 서</span><span class="mode">${bank ? `D${G.day} 폐업` : `D${DAYS} 결산`}</span></div>
@@ -1336,28 +2582,46 @@ function renderModal() {
 
 function render() {
   V.want = null;
-  const ap = Array.from({ length: AP_MAX }, (_, i) => `<i class="${i < G.ap ? 'on' : ''}"></i>`).join('');
+  const ap = Array.from({ length: Math.max(AP_MAX, G.ap) }, (_, i) => `<i class="${i < G.ap ? 'on' : ''}"></i>`).join('');
   document.getElementById('app').innerHTML = `
     <header class="sign">
-      <div class="brand"><span class="seal" aria-hidden="true">典當</span><div><h1>나는 전당포 사장이다</h1><small>골목 전당포 · 프로토타입 v0.3</small></div></div>
+      <div class="brand"><span class="seal" aria-hidden="true">典當</span><div><h1>나는 전당포 사장이다</h1><small>골목 전당포 · 프로토타입 v0.7</small></div></div>
       <div class="stats">
         <div class="stat"><span class="k">영업일</span><span class="v">D${G.day}/${DAYS}</span></div>
         <div class="stat"><span class="k">현금</span><span class="v">${won(G.cash)}</span></div>
         <div class="stat"><span class="k">평판</span><span class="v">${G.rep}</span></div>
+        ${G.debt ? `<div class="stat"><span class="k">빚</span><span class="v neg">${won(G.debt)}</span></div>` : ''}
         <div class="stat"><span class="k">금시세 24K 1돈</span><span class="v">${G.gold}만</span></div>
         <div class="stat"><span class="k">감정력</span><span class="ap" aria-label="감정력 ${G.ap}">${ap}</span></div>
       </div>
     </header>
     <div class="main">${renderCounter()}${renderSide()}</div>
+    ${G.phase === 'intro' ? '' : renderTabs()}
     ${renderModal()}`;
   attachStage();
+  if (G.phase !== 'intro') scheduleSave();
+  scrollFocus();
+}
+
+// 휴대폰처럼 한 줄로 쌓인 화면에서 지금 봐야 할 곳이 화면 밖이면 그리로 옮긴다 (보이면 그대로)
+function scrollFocus() {
+  const want = UI.scrollTo; UI.scrollTo = null;
+  const el = want && document.querySelector(want === 'stage' ? '.stage' : '.counter');
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  if (r.top < 0 || r.bottom > innerHeight) el.scrollIntoView({ block: want === 'stage' ? 'center' : 'start', behavior: V.reduced ? 'auto' : 'smooth' });
 }
 
 document.addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  const b = e.target.closest('button') || (e.target.matches('.overlay[data-act]') ? e.target : null); if (!b || b.disabled) return;
   const d = b.dataset, c = G.cur;
   if (d.tool) return useTool(d.tool);
   if (d.choice) return choose(Number(d.choice));
+  if (d.spot) return inspectSpot(d.spot);
+  if (d.up) return buyUpgrade(d.up);
+  if (d.fraud) return reportFraud(Number(d.fraud));
+  if (d.dump) return dumpFake(Number(d.dump));
+  if (d.jump) { const el = d.jump === 'counter' ? document.querySelector('.counter') : document.getElementById(d.jump); if (el) el.scrollIntoView({ block: 'start', behavior: V.reduced ? 'auto' : 'smooth' }); return; }
   if (d.step && c) { c.offer = Math.max(1, Math.round(c.offer) + Number(d.step)); return render(); }
   if (d.pct && c) { c.offer = Math.max(1, Math.round(c.ask * Number(d.pct))); return render(); }
   if (d.buyer) return askBuyer(Number(d.buyer));
@@ -1370,15 +2634,24 @@ document.addEventListener('click', e => {
     case 'acceptAsk': return deal(c.ask);
     case 'reject': return rejectGuest();
     case 'next': return nextCustomer();
+    case 'buyAP': return buyAP();
+    case 'borrow': return borrow();
+    case 'repay': return repay();
+    case 'tipOff': G.tutorial = false; return render();
+    case 'dex': UI.dex = true; return render();
+    case 'dexClose': UI.dex = false; return render();
+    case 'continue': return continueGame();
+    case 'unfocus': unfocus(); return render();
     case 'endDay': return endDay();
     case 'nextDay': return nextDay();
-    case 'restart': newGame(); return render();
+    case 'restart': newGame(); STORE.save = null; return render();
   }
 });
 document.addEventListener('input', e => {
   if (e.target.id === 'offer' && G.cur) G.cur.offer = Number(e.target.value) || 0;
 });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && UI.dex) { UI.dex = false; render(); }
   if (e.target.id === 'offer' && e.key === 'Enter') makeOffer();
 });
 
@@ -1386,6 +2659,7 @@ function boot(data) {
   if (!V.r) initViewer();
   if (data && data.G && data.G.reg) G = data.G; else newGame();
   render();
+  initStore();
 }
 window.claude?.hot?.snapshot?.(() => ({ G }));
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
