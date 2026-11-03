@@ -7,7 +7,8 @@
 - 배포: Claude 아티팩트 https://claude.ai/artifact/TkkaipDEqcmkUrQJBUDYLn
   - 새 세션에서 업데이트할 때는 Artifact 도구에 이 `url`을 넘겨서 같은 링크를 유지한다 (먼저 `action: "read"`로 읽고 publish).
   - 아티팩트 파일 규칙상 `<html>/<head>/<body>` 태그 없이 내용만 쓴다.
-- GitHub Pages: `index.html`은 `pawnshop.html`에 문서 틀을 씌운 생성물이다. **pawnshop.html을 고친 뒤 `./tools/build-pages.sh`를 돌려 index.html도 같이 커밋**한다(직접 수정 금지). Pages에서는 아티팩트 db가 없어 저장은 localStorage로 자동 전환된다. `.nojekyll`로 Jekyll 처리를 끈다.
+- GitHub Pages(자동차 딜러·편의점 점장과 같은 방식): 공개 저장소, `main` 브랜치 루트로 배포 → https://comco88-gif.github.io/pawnshop-owner/ . 홈 화면 앱용 `manifest.webmanifest`·`icons/`와 공유 미리보기 태그는 build-pages.sh가 index.html에만 넣는다.
+- `index.html`은 `pawnshop.html`에 문서 틀을 씌운 생성물이다. **pawnshop.html을 고친 뒤 `./tools/build-pages.sh`를 돌려 index.html도 같이 커밋**한다(직접 수정 금지). Pages에서는 아티팩트 db가 없어 저장은 localStorage로 자동 전환된다. `.nojekyll`로 Jekyll 처리를 끈다.
 
 ## 현재 버전: v0.7
 - **핵심 루프**: 14일 운영, 시작 현금 1,500만원, 7일마다 월세 400만원, 목표 현금 3,000만원 (S/A/B/C/F 등급).

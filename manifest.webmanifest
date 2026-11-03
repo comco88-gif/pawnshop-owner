@@ -1,0 +1,17 @@
+{
+  "name": "나는 전당포 사장이다",
+  "short_name": "전당포 사장",
+  "description": "손님의 물건을 3D로 돌려보며 가품을 가려내는 골목 전당포 운영 게임",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#17120e",
+  "theme_color": "#17120e",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
